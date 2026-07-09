@@ -38,8 +38,10 @@ func (m *ShareModel) Update(share *Share) error {
 }
 
 func (m *ShareModel) GetShareData(path, token string) (data string) {
-	row := db.Table("my_share").Where("path = ? AND token = ? AND status = 0", path, token).Select("data").Row()
-	row.Scan(&data)
+	_ = db.Table("my_share").
+		Where("path = ? AND token = ? AND status = 0", path, token).
+		Select("data").
+		Scan(&data).Error
 	return
 }
 
@@ -57,3 +59,4 @@ func (m *ShareModel) GetShareListByUserId(opType, userId int) (shareList []*Shar
 		Find(&shareList)
 	return
 }
+

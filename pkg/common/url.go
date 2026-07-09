@@ -36,9 +36,9 @@ func Base64URLDecode(data string) ([]byte, error) {
 func Base64UrlSafeEncode(source []byte) string {
 	// Base64 Url Safe is the same as Base64 but does not contain '/' and '+' (replaced by '_' and '-') and trailing '=' are removed.
 	bytearr := base64.StdEncoding.EncodeToString(source)
-	safeurl := strings.Replace(string(bytearr), "/", "_", -1)
-	safeurl = strings.Replace(safeurl, "+", "-", -1)
-	safeurl = strings.Replace(safeurl, "=", "", -1)
+	safeurl := strings.ReplaceAll(string(bytearr), "/", "_")
+	safeurl = strings.ReplaceAll(safeurl, "+", "-")
+	safeurl = strings.ReplaceAll(safeurl, "=", "")
 	return safeurl
 }
 

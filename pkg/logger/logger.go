@@ -3,6 +3,7 @@ package logger
 import (
 	"log"
 	"os"
+	"sync"
 
 	"develop_tools/pkg/path"
 )
@@ -12,6 +13,10 @@ var (
 
 	loggerInfo  *log.Logger
 	loggerError *log.Logger
+
+	infoFile  *os.File
+	errorFile *os.File
+	closeOnce sync.Once
 )
 
 func Init() error {
@@ -21,39 +26,49 @@ func Init() error {
 	}
 
 	var err error
-	if loggerInfo, err = newLogger("info"); err != nil {
+	if loggerInfo, infoFile, err = newLogger("info"); err != nil {
 		return err
 	}
-	if loggerError, err = newLogger("error"); err != nil {
+	if loggerError, errorFile, err = newLogger("error"); err != nil {
+		_ = infoFile.Close()
 		return err
 	}
 	return nil
 }
 
-func newLogger(fileName string) (*log.Logger, error) {
+func Close() error {
+	var err error
+	closeOnce.Do(func() {
+		if infoFile != nil {
+			if e := infoFile.Close(); e != nil {
+				err = e
+			}
+		}
+		if errorFile != nil {
+			if e := errorFile.Close(); e != nil && err == nil {
+				err = e
+			}
+		}
+	})
+	return err
+}
+
+func newLogger(fileName string) (*log.Logger, *os.File, error) {
 	filePath := path.Join(logsDir, fileName+".log")
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0640)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	logger := log.New(file, "", log.Lshortfile|log.Ldate|log.Ltime)
-
-	return logger, nil
+	return log.New(file, "", log.Lshortfile|log.Ldate|log.Ltime), file, nil
 }
 
 func Info(f string, v ...interface{}) {
-	//标准输出
 	log.Printf(f, v...)
-
-	//日志记录
 	loggerInfo.Printf(f, v...)
 }
 
 func Error(f string, v ...interface{}) {
-	//标准输出
 	log.Printf(f, v...)
-
-	//日志记录
 	loggerError.Printf(f, v...)
 }

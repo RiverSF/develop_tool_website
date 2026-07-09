@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -76,11 +77,6 @@ func AdxGetDspList(c *gin.Context) {
 	}
 
 	dspList := model.NewDspModel().GetDspList(req.IsCn)
-
-	for _, dsp := range dspList {
-		dsp.Adm = ""
-	}
-
 	c.JSON(http.StatusOK, dspList)
 }
 
@@ -103,7 +99,7 @@ func AdxSaveDspNotice(c *gin.Context) {
 	uniqueKey := c.Params.ByName("uniqueKey")
 	noticeType := c.Params.ByName("noticeType")
 
-	dsp := model.NewDspModel().GetDspByUniqueKey(uniqueKey)
+	dspID := model.NewDspModel().GetDspIDByUniqueKey(uniqueKey)
 
 	noticeTypeInt, err := model.NewDspNoticeModel().GetNoticeTypeValue(noticeType)
 
@@ -116,7 +112,7 @@ func AdxSaveDspNotice(c *gin.Context) {
 	ua := c.Request.Header.Get("User-Agent")
 
 	dspNotice := &model.DspNotice{
-		DspId:      dsp.Id,
+		DspId:      dspID,
 		NoticeType: noticeTypeInt,
 		Ip:         netIp,
 		Ua:         ua,
@@ -269,7 +265,7 @@ func AdxBidDsp(c *gin.Context) {
 
 	adResponse := dsp.Adm
 	var adResponseJson map[string]interface{}
-	json.Unmarshal([]byte(adResponse), &adResponseJson)
+	_ = json.Unmarshal([]byte(adResponse), &adResponseJson)
 	c.JSON(http.StatusOK, adResponseJson)
 }
 
@@ -307,19 +303,15 @@ func AdxUserSync(c *gin.Context) {
 	redirectUrl := c.Query("my_redirect_url")
 
 	if len(redirectUrl) > 0 {
-		redirectUrl = strings.Replace(redirectUrl, AdxUserIdMacro, myDspUid, -1)
-		redirectUrl = strings.Replace(redirectUrl, GdprMacro, common.IntToString(myGdpr), -1)
-		redirectUrl = strings.Replace(redirectUrl, GdprConsentMacro, myGdprConsent, -1)
+		redirectUrl = strings.ReplaceAll(redirectUrl, AdxUserIdMacro, myDspUid)
+		redirectUrl = strings.ReplaceAll(redirectUrl, GdprMacro, common.IntToString(myGdpr))
+		redirectUrl = strings.ReplaceAll(redirectUrl, GdprConsentMacro, myGdprConsent)
 
 		if len(myPassthrough) > 0 {
 			redirectUrl += "&" + myPassthrough
 		}
 
-		allowedHosts := []string{"localhost", "127.0.0.1"}
-		if host := common.HostnameFromURL(config.AppConfig.Host); host != "" {
-			allowedHosts = append(allowedHosts, host)
-		}
-		safeURL, err := common.ValidateRedirectURL(redirectUrl, allowedHosts...)
+		safeURL, err := common.ValidateRedirectURL(redirectUrl, userSyncAllowedHosts()...)
 		if err != nil {
 			logger.Error("invalid redirect url: %s, err=%s", redirectUrl, err.Error())
 			c.JSON(http.StatusOK, gin.H{"status": 400, "message": err.Error()})
@@ -332,4 +324,19 @@ func AdxUserSync(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, nil)
+}
+
+var (
+	userSyncHostsOnce sync.Once
+	userSyncHosts     []string
+)
+
+func userSyncAllowedHosts() []string {
+	userSyncHostsOnce.Do(func() {
+		userSyncHosts = []string{"localhost", "127.0.0.1"}
+		if host := common.HostnameFromURL(config.AppConfig.Host); host != "" {
+			userSyncHosts = append(userSyncHosts, host)
+		}
+	})
+	return userSyncHosts
 }

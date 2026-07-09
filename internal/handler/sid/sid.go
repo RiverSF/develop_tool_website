@@ -29,21 +29,18 @@ func GetSid(c *gin.Context) {
 		return
 	}
 
-	rq.Content = strings.Replace(rq.Content, " ", "", -1)
-	rq.Content = strings.Replace(rq.Content, "'", "", -1)
-	rq.Content = strings.Replace(rq.Content, "\"", "", -1)
-	rq.Content = strings.Replace(rq.Content, ",", "", -1)
-	rq.Content = strings.Replace(rq.Content, "\t", "", -1)
+	rq.Content = sidContentReplacer.Replace(rq.Content)
 
 	records := strings.Split(rq.Content, "\n")
 
-	content2 := ""
+	var b strings.Builder
+	b.Grow(len(rq.Content) + len(records)*40)
 	for _, record := range records {
 		sid, err := GetSupplyChainSid(record)
 		if err != nil {
-			content2 += fmt.Sprintf("%s       [error]%s\n", record, err.Error())
+			fmt.Fprintf(&b, "%s       [error]%s\n", record, err.Error())
 		} else {
-			content2 += fmt.Sprintf("%s       river.com,%s,DIRECT\n", record, sid)
+			fmt.Fprintf(&b, "%s       river.com,%s,DIRECT\n", record, sid)
 		}
 	}
 
@@ -52,10 +49,12 @@ func GetSid(c *gin.Context) {
 		Result string `json:"result"`
 	}{
 		200,
-		content2,
+		b.String(),
 	}
 	c.JSON(http.StatusOK, response)
 }
+
+var sidContentReplacer = strings.NewReplacer(" ", "", "'", "", "\"", "", ",", "", "\t", "")
 
 func GetSupplyChainSid(url string) (string, error) {
 	mainDomain, err := GetHostMainDomain(url)

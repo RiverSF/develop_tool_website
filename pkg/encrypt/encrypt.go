@@ -6,16 +6,16 @@ import (
 	"crypto/cipher"
 	"errors"
 	"fmt"
-
-	"develop_tools/pkg/common"
 )
 
 // 加密密钥验证，仅支持16位
 func VerifyEncryptKey(key string) (bool, error) {
-	if common.IsContain([]int{1 << 4, 1 << 5, 1 << 6, 1 << 7, 1 << 8}, len(key)) {
+	switch len(key) {
+	case 1 << 4, 1 << 5, 1 << 6, 1 << 7, 1 << 8:
 		return true, nil
+	default:
+		return false, errors.New("invalid encrypt key")
 	}
-	return false, errors.New("invalid encrypt key")
 }
 
 // AesEncrypt uses AES-ECB for legacy protocol compatibility with existing clients.

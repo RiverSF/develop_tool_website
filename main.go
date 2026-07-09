@@ -30,6 +30,7 @@ func main() {
 		log.Fatalf("fail to initDB, err=%s", err.Error())
 	}
 	defer model.Close()
+	defer logger.Close()
 
 	gin.SetMode(config.AppConfig.RunMode)
 

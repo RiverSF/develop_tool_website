@@ -51,18 +51,18 @@ func HttpPostRequest(apiUrl string, bytesData []byte, headers map[string]string,
 
 	defer response.Body.Close()
 
-	body := response.Body
+	body := io.Reader(response.Body)
 	if response.Header.Get("Content-Encoding") == "gzip" {
-		body2, e := gzip.NewReader(response.Body)
+		gz, e := gzip.NewReader(response.Body)
 		if e == nil {
-			body = body2
+			defer gz.Close()
+			body = gz
 		} else if e != io.EOF {
 			return nil, []byte{}, fmt.Errorf("unzip error='%w'", e)
 		}
 	}
 
 	data, err := io.ReadAll(body)
-	_, _ = io.Copy(io.Discard, response.Body)
 	if err != nil {
 		return nil, []byte{}, fmt.Errorf("read body error='%w'", err)
 	}
@@ -78,7 +78,6 @@ func HttpGetRequest(apiUrl string, httpClient *http.Client) (*http.Response, []b
 
 	defer response.Body.Close()
 	body, err := io.ReadAll(response.Body)
-	_, _ = io.Copy(io.Discard, response.Body)
 	if err != nil {
 		return nil, []byte{}, fmt.Errorf("read body error='%w'", err)
 	}

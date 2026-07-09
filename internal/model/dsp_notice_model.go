@@ -51,6 +51,17 @@ var NoticeTypeMap = map[string]int{
 	"tpclkurl": 8,
 }
 
+var noticeTypeNameMap = map[int]string{
+	1: "burl",
+	2: "nurl",
+	3: "lurl",
+	4: "tpnurl",
+	5: "tplurl",
+	6: "tpburl",
+	7: "tpimpurl",
+	8: "tpclkurl",
+}
+
 func (m *DspNoticeModel) GetNoticeTypeValue(noticeType string) (int, error) {
 	if typeInt, ok := NoticeTypeMap[noticeType]; ok {
 		return typeInt, nil
@@ -60,11 +71,8 @@ func (m *DspNoticeModel) GetNoticeTypeValue(noticeType string) (int, error) {
 }
 
 func (m *DspNoticeModel) GetNoticeTypeName(noticeTypeValue int) (string, error) {
-
-	for name, value := range NoticeTypeMap {
-		if value == noticeTypeValue {
-			return name, nil
-		}
+	if name, ok := noticeTypeNameMap[noticeTypeValue]; ok {
+		return name, nil
 	}
 
 	return "", errors.New(fmt.Sprintf("invalid noticeTypeValue: %d", noticeTypeValue))

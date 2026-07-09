@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -80,13 +81,12 @@ func extractTranslation(payload *transResponse) (string, string) {
 		return transType, items[0].Tgt
 	}
 
-	var transTgt string
+	var b strings.Builder
 	for idx, item := range items {
-		prefix := ""
 		if idx > 0 {
-			prefix = "\r\n"
+			b.WriteString("\r\n")
 		}
-		transTgt += fmt.Sprintf("%s%s\r\n%s", prefix, item.Src, item.Tgt)
+		fmt.Fprintf(&b, "%s\r\n%s", item.Src, item.Tgt)
 	}
-	return transType, transTgt
+	return transType, b.String()
 }

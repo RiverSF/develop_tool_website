@@ -3,6 +3,12 @@ package path
 import (
 	"os"
 	"path/filepath"
+	"sync"
+)
+
+var (
+	wdOnce sync.Once
+	wdVal  string
 )
 
 // Root returns application root directory.
@@ -11,14 +17,24 @@ func Root() string {
 	if v := os.Getenv("APP_ROOT"); v != "" {
 		return v
 	}
-	wd, err := os.Getwd()
-	if err != nil {
-		return "."
-	}
-	return wd
+	wdOnce.Do(func() {
+		wd, err := os.Getwd()
+		if err != nil {
+			wdVal = "."
+			return
+		}
+		wdVal = wd
+	})
+	return wdVal
 }
 
 // Join joins paths under application root.
 func Join(elem ...string) string {
-	return filepath.Join(append([]string{Root()}, elem...)...)
+	if len(elem) == 0 {
+		return Root()
+	}
+	parts := make([]string, 0, len(elem)+1)
+	parts = append(parts, Root())
+	parts = append(parts, elem...)
+	return filepath.Join(parts...)
 }
