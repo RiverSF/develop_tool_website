@@ -1,0 +1,60 @@
+
+{{template "header" .}}
+
+<section>
+    <div style="width: 49%; float: left">
+        <i-Input v-model="content1" type="textarea" :rows="globalTextareaRowsNoneButton"></i-Input>
+    </div>
+
+    <div style="width: 49%; float: left;margin-left: 15px">
+        <i-Input v-model="content2" type="textarea" :rows="globalTextareaRowsNoneButton"></i-Input>
+    </div>
+</section>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                content1: "",
+                content2: ""
+            }
+        },
+        watch:{
+            content1(){
+                this.change()
+            },
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content1":this.content1,
+                    "content2":this.content2,
+                }
+            },
+            initShareData(data) {
+                this.content1 = data["content1"]
+                this.content2 = data["content2"]
+            },
+            change() {
+                axios.post('/sid/get', {
+                    content: this.content1,
+                }).then((response) => {
+                    if (response.status === 200) {
+                        let resp = response.data
+                        this.content2 = resp.result
+                    } else {
+                        console.log("失败");
+                    }
+                }).catch((error) => {
+                    console.log(error);
+                })
+            },
+        },
+        mounted(){
+
+        }
+    }
+</script>
+
+{{template "footer" .}}

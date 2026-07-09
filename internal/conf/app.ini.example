@@ -1,0 +1,24 @@
+RUN_MODE = release
+
+[server]
+
+HTTP_PORT     = 8089
+READ_TIMEOUT  = 1000
+WRITE_TIMEOUT = 1000
+
+[host]
+
+HOST_TEST     = http://localhost:8089
+HOST_RELEASE  = http://www.river.site
+
+[mysql]
+
+MYSQL_HOST     = 127.0.0.1
+MYSQL_PORT     = 3306
+MYSQL_USER     = root
+MYSQL_PASSWORD =
+MYSQL_DB       = develop_tools
+
+# 敏感项优先从环境变量读取：
+# MYSQL_HOST MYSQL_PORT MYSQL_USER MYSQL_PASSWORD MYSQL_DB
+# RUN_MODE HTTP_PORT APP_HOST CONFIG_PATH

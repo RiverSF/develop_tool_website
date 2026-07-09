@@ -1,0 +1,360 @@
+
+{{template "header" .}}
+
+<section>
+    <div style="width: 45%; float: left">
+        <i-Input v-model="content1" type="textarea" class="glass-input" :rows="globalTextareaRowsWithButton - 3"></i-Input>
+
+        <div style="float: left; margin-top: 10px; width: 100%">
+            <i-Select v-model="intervalType" style="width: 30%">
+                <i-Option v-for="item in intervalTypeList" :value="item.key" :key="item.key">
+                    <span v-html="item.label"></span>
+                </i-Option>
+            </i-Select>
+
+            <i-Input v-model="intervalValue" type="number" placeholder="输入跨度或数量" style="width:42.5%;margin-left: 10px"></i-Input>
+
+            <i-button type="primary" @click="conv()" style="margin-left: 10px">统计</i-button>
+        </div>
+
+        <div style="float: left; margin-top: 10px; width: 100%">
+            <i-Select model-value="1" style="width: 30%">
+                <i-Option v-for="item in maxTypeList" :value="item.key" :key="item.key">
+                    <span v-html="item.label"></span>
+                </i-Option>
+            </i-Select>
+            <i-Input v-model="minValue" type="number" placeholder="输入最小值" style="width:20%;margin-left: 10px"></i-Input>
+            <span style="width: 10%; text-align: center">&nbsp;&nbsp;~</span>
+            <i-Input v-model="maxValue" type="number" placeholder="输入最大值" style="width:20%;margin-left: 10px"></i-Input>
+        </div>
+
+    </div>
+
+    <div style="width: 53%; float: left;margin-left: 15px" v-show="!loadding">
+        <div class="chart-container">
+            <h3>分布图表</h3><br/>
+            <canvas id="distributionChart"></canvas>
+        </div>
+        <h3 style="margin-top: 60px;border-top: 1px solid #688cb3;">统计结果</h3>
+        <div style="padding-left: 100px;">
+            <i-Table :columns="columns" :data="results" :show-header="true" :disabled-hover="true">
+            </i-Table>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var render = {
+        data () {
+            return {
+                content1: "",
+                content2: "",
+                intervalType : "0",
+                intervalValue : "1",
+                intervalTypeList :[
+                    {"key": '0', "label": '按区间跨度'},
+                    {"key": '1', "label": '按区间数量'},
+                ],
+                maxTypeList :[
+                    {"key": '1', "label": '最小值~最大值'},
+                ],
+                minValue: 0,
+                maxValue: 0,
+                results:[],
+                columns:[
+                    {
+                        title: '区间',
+                        key: 'range',
+                        width: 200
+                    },
+                    {
+                        title: '数量',
+                        key: 'count',
+                        width: 200
+                    },
+                    {
+                        title: '占比',
+                        key: 'percentage',
+                        width: 200,
+                    }
+                ],
+                chart: null,
+                loadding:true,
+            }
+        },
+        watch: {
+
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content1":this.content1,
+                    "intervalType":this.intervalType,
+                    "intervalValue":this.intervalValue,
+                    "minValue":this.minValue,
+                    "maxValue":this.maxValue,
+                }
+            },
+            initShareData(data) {
+                this.content1 = data["content1"]
+                this.intervalType = data["intervalType"]
+                this.intervalValue = data["intervalValue"]
+                this.minValue = data["minValue"]
+                this.maxValue = data["maxValue"]
+                this.conv()
+            },
+            initOrInitShareDataFail(){
+                this.conv()
+            },
+            conv() {
+                this.loadding = true
+                var prices = this.parsePriceInput(this.content1)
+                var bins = []
+                if (this.intervalType === "0") {
+                    if (isNaN(this.intervalValue) || this.intervalValue <= 0) {
+                        this.$Notice.error({
+                            title: '提示',
+                            desc: '区间宽度需大于0'
+                        });
+                        return;
+                    }
+
+                    bins = this.generateAutoBinsByWidth(prices, parseFloat(this.intervalValue));
+                }
+
+                if (this.intervalType === "1") {
+                    if (isNaN(this.intervalValue) || this.intervalValue < 2) {
+                        this.$Notice.error({
+                            title: '提示',
+                            desc: '区间数量需大于1'
+                        });
+                        return;
+                    }
+                    bins = this.generateAutoBinsByCount(prices, parseFloat(this.intervalValue));
+                }
+
+                bins = bins.slice(0, 200);
+
+                // 计算分布
+                const distribution = this.calculatePriceDistribution(prices, bins);
+
+                this.results = this.getResults(distribution, bins);
+
+                // 显示图表
+                this.renderChart(distribution, bins);
+
+                this.loadding = false
+            },
+            parsePriceInput(input) {
+                if (this.minValue === '' || this.minValue === undefined) {
+                    this.minValue = 0
+                }
+                if (this.maxValue === '' || this.maxValue === undefined) {
+                    this.maxValue = 0
+                }
+                return input.split(/[\n,]/)
+                    .map(price => parseFloat(price.trim()))
+                    .filter(price => !isNaN(price) && price >= 0 && (this.minValue === 0 || (this.minValue > 0 && price >= this.minValue)) && (this.maxValue === 0 || (this.maxValue > 0 && price <= this.maxValue)));
+            },
+            // 按区间宽度生成自动区间
+            generateAutoBinsByWidth(prices, width) {
+                const min = Math.min(...prices);
+                const max = Math.max(...prices);
+
+                // 计算起始点（向下取整到最近的width倍数）
+                const start = Math.floor(min / width) * width;
+
+                // 生成区间边界
+                const bins = [];
+                let current = start;
+
+                while (current < max) {
+                    bins.push(current);
+                    current += width;
+                }
+
+                // 确保覆盖最大值
+                bins.push(current);
+
+                return bins;
+            },
+            generateAutoBinsByCount(prices, count) {
+                const min = Math.min(...prices);
+                const max = Math.max(...prices);
+                const range = max - min;
+                const step = range / count;
+
+                // 生成区间边界
+                const bins = [];
+                for (let i = 0; i <= count; i++) {
+                    bins.push(min + i * step);
+                }
+
+                return bins;
+            },
+            calculatePriceDistribution(prices, bins) {
+                // 初始化分布数组
+                const distribution = new Array(bins.length - 1).fill(0);
+
+                // 统计每个区间的数量
+                prices.forEach(price => {
+                    for (let i = 0; i < bins.length - 1; i++) {
+                        if (price >= bins[i] && price < bins[i + 1]) {
+                            distribution[i]++;
+                            break;
+                        }
+                        // 处理最后一个区间（包含最大值）
+                        if (i === bins.length - 2 && price === bins[i + 1]) {
+                            distribution[i]++;
+                        }
+                    }
+                });
+
+                return distribution;
+            },
+            getResults(distribution, bins) {
+                var results = []
+                var total = distribution.reduce((sum, count) => sum + count, 0);
+                distribution.forEach((count, index) => {
+                    var rangeStart = bins[index];
+                    var rangeEnd = bins[index + 1];
+                    var percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                    results.push({
+                        "rangeStart":this.formatCurrency(rangeStart),
+                        "rangeEnd":this.formatCurrency(rangeEnd),
+                        "range": this.formatCurrency(rangeStart)+"~"+this.formatCurrency(rangeEnd),
+                        "count":count,
+                        "percentage":this.formatCurrency(percentage),
+                    })
+                });
+                return results
+            },
+            renderChart(distribution, bins) {
+                const ctx = document.getElementById('distributionChart').getContext('2d');
+
+                // 销毁现有图表
+                if (this.chart) {
+                    this.chart.destroy();
+                }
+
+                // 准备图表数据
+                const labels = [];
+                const backgroundColors = [];
+
+                for (let i = 0; i < bins.length - 1; i++) {
+                    labels.push(`${this.formatCurrency(bins[i])} - ${this.formatCurrency(bins[i + 1])}`);
+
+                    // 生成渐变色
+                    const hue = 200 + (i * 30) % 150; // 蓝色系渐变
+                    backgroundColors.push(`hsl(${hue}, 70%, 65%)`);
+                }
+
+                // 创建新图表
+                this.chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '数量',
+                            data: distribution,
+                            backgroundColor: backgroundColors,
+                            borderColor: 'rgba(255, 255, 255, 0.8)',
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            hoverBackgroundColor: backgroundColors.map(color => color.replace('65%', '75%'))
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                },
+                                title: {
+                                    display: true,
+                                    text: '数量',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '区间',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    autoSkip: false,
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => {
+                                        return items[0].label;
+                                    },
+                                    label: (context) => {
+                                        const total = distribution.reduce((a, b) => a + b, 0);
+                                        const value = context.parsed.y;
+                                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
+                                        return `数量: ${value} (占比: ${percentage}%)`;
+                                    }
+                                },
+                                padding: 12,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleFont: {
+                                    size: 14
+                                },
+                                bodyFont: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
+            },
+            formatCurrency(amount) {
+                return Number(amount).toFixed(2);
+            }
+        },
+        mounted(){
+
+        }
+    }
+</script>
+
+{{template "footer" .}}
+
+
+<style>
+    .chart-container {
+        height: 400px;
+        margin-top: 20px;
+        position: relative;
+    }
+</style>

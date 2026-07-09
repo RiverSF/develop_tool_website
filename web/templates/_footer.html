@@ -1,0 +1,614 @@
+{{define "footer"}}
+
+                        </div>
+                    </i-Content>
+                </Layout>
+            </div>
+
+            <input id="copyText" style="display:none"/>
+
+            <Modal v-model="shareModal" title="分享链接" @on-ok="shareOk" :width="700" :footer-hide="true">
+                <div style="padding: 5px">
+                    <span>名称：</span>
+                    <i-Input v-model="shareName" style="width:300px;" id="shareName"></i-Input>
+                    <i-button type="text" style="margin-left: 5px" @click="shareNameChange" size="small">更新</i-button>
+                </div>
+                <div style="padding: 5px">
+                    <span>链接：</span>
+                    <a :href="shareUrl" target="_blank" style="color: #006688 !important">
+                        <span v-html="shareUrl" ></span>
+                    </a>
+                </div>
+            </Modal>
+
+            <Modal v-model="downloadModal" title="文件下载"  :width="700" :footer-hide="true">
+                <div style="padding: 5px" label="名称：" v-for="(item, index) in downloadTextList" v-show="item.content.length > 10">
+                    <span>名称：</span>
+                    <i-Input v-model="shareName" style="width:300px"></i-Input>
+                    <i-Select filterable clearable v-model="item.mimeType" style="width: 30%; margin-left: 8px">
+                        <i-Option v-for="item2 in mimeTypes" :value="item2.key" :key="item2.mimeType">
+                            <span v-html="item2.label"></span>
+                        </i-Option>
+                    </i-Select>
+                    <i-button type="text" style="margin-left: 8px" @click="downloadFile(item.content, item.mimeType)" size="small">下载</i-button>
+                </div>
+            </Modal>
+
+            <Modal v-model="collectModal" title="收藏" @on-ok="collectOk" @on-cancel="shareCancel"  :width="700">
+                <div style="padding: 5px">
+                    <span>名称：</span>
+                    <i-Input v-model="shareName" style="width:300px" id="shareName"></i-Input>
+                </div>
+            </Modal>
+
+
+        </div>
+        <script setup>
+            const myMixin = {
+                data () {
+                    return {
+                        clientHeight: 0,
+                        clientWidth: 0,
+                        contentHeight: 0,
+                        contentWidth: 0,
+                        host: "",
+                        path: "",
+                        local: "",
+                        params:{},
+                        contentBackgroundColor:"",
+
+                        nowDate: "",
+
+                        logoClickNumber: 0,
+
+                        globalTextareaRowsWithButton: 0,
+                        globalTextareaRowsNoneButton: 0,
+
+                        uuid: "",
+                        copyText:"",
+
+                        opTypeCollect :1,
+                        opTypeShare   :2,
+                        opTypeDownload:3,
+
+                        shareModal: false,
+                        shareId:0,
+                        shareName: "",
+                        shareToken: "",
+                        shareUrl: "",
+                        shareData:{},
+
+                        downloadModal:false,
+                        downloadTextList:[],
+                        mimeTypes: [
+                            {"label": ".txt","key": "text/plain"},
+                            {"label": ".html","key": "text/html"},
+                            {"label": ".json","key": "application/json"},
+                            {"label": ".css","key": "text/css"},
+                            {"label": ".pdf","key": "application/pdf"},
+                            {"label": ".doc","key": "application/msword"},
+                            {"label": ".docx","key": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+                            {"label": ".js","key": "text/javascript"},
+                            {"label": ".php","key": "application/x-httpd-php"},
+                            {"label": ".sh","key": "application/x-sh"},
+                            {"label": ".xls","key": "application/vnd.ms-excel"},
+                            {"label": ".xlsx","key": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                            {"label": ".xml","key": "application/xml"}
+                        ],
+
+                        opType: 0,
+                        collectModal: false,
+                        collectName: "",
+                        collectData:{},
+
+                        userName: "",
+                        userId: 0,
+                        userAgents: [],
+                    }
+                },
+                created() {
+                    this.mix()
+                    this.onresize()
+                    this.host = window.location.host
+                    this.path = window.location.pathname
+                    this.local = window.location.origin
+                },
+                methods: {
+                    mix() {
+                        // console.log('混入实例!')
+                    },
+                    onresize() {
+                        //this.clientHeight = document.body.clientHeight > document.documentElement.clientHeight ? document.body.clientHeight : document.documentElement.clientHeight
+                        this.clientHeight = document.documentElement.clientHeight
+                        this.contentHeight = this.clientHeight - 86
+                        this.contentHeightInner = this.clientHeight - 100
+
+                        // console.log(document.documentElement.clientWidth, document.body.clientWidth)
+
+                        this.clientWidth = document.documentElement.clientWidth
+                        this.contentWidth = this.clientWidth - 36*2
+
+                        this.globalTextareaRowsWithButton = (this.contentHeight - 63) / 21
+                        this.globalTextareaRowsNoneButton = this.contentHeight / 21
+                    },
+                    getParam() {
+                        var queryString = window.location.search;
+                        var params = {};
+                        if (queryString) {
+                            var pairs = queryString.split('&');
+                            for (var i = 0; i < pairs.length; i++) {
+                                var pair = pairs[i].split('=');
+                                if(pair.length>0){
+                                    params[pair[0].replace('?','')] = pair[1];
+                                }
+                            }
+                        }
+                        this.params = params
+                    },
+                    setContentBackgroundColor(color){
+                        this.contentBackgroundColor = color
+                    },
+                    getRGB() {
+                        let r = parseInt(Math.random() * 256), //0-255
+                            g = parseInt(Math.random() * 256), //0-255
+                            b = parseInt(Math.random() * 256); //0-255
+                        return `rgb(${r},${g},${b})` //使用了es6的模板字符串
+                    },
+                    logoClick() {
+                        this.logoClickNumber ++
+                        window.location.href = "/"
+                    },
+                    getUniqueId() {
+                        num = navigator.userAgent.replace(/[^0-9]/ig, "")
+                        return num.substr(num.length - 10)
+                    },
+                    getUniqueRGB(){
+                        id = this.getUniqueId()
+
+                        let r = parseInt(id * 22 % 256), //0-255
+                            g = parseInt(id * 21 % 256), //0-255
+                            b = parseInt(id * 96 % 256); //0-255
+
+                        console.log(r,g,b)
+                        return `rgb(${r},${g},${b})` //使用了es6的模板字符串
+                    },
+                    add(m){
+                        return m<10 ? '0'+m : m
+                    },
+                    exchangeT2D(t, timezone){
+
+                        var mt = 0
+                        var isMs = false
+                        var len = t.toString().length
+
+                        if (len === 10) {
+                            mt = t*1000
+                        } else if (len === 13) {
+                            mt = t*1
+                            isMs = true
+                        }
+
+                        mt -= (8-timezone)*3600*1000
+
+                        var time = new Date(mt);
+                        var y = time.getFullYear();
+                        var m = time.getMonth()+1;
+                        var d = time.getDate();
+                        var h = time.getHours();
+                        var mm = time.getMinutes();
+                        var s = time.getSeconds();
+
+                        date = y+'-'+this.add(m)+'-'+this.add(d)+' '+this.add(h)+':'+this.add(mm)+':'+this.add(s);
+
+                        if (isMs) {
+                            var ms =time.getMilliseconds()
+                            date += '.'+ms
+                        }
+
+                        return date
+                    },
+                    exchangeD2T(d, timezone){
+                        d = d.substring(0,19);
+                        d = d.replace(/-/g,'/');
+                        time = new Date(d).getTime() / 1000;
+                        time += (8-timezone)*3600
+                        return time
+                    },
+                    getUUID(){
+                        const fpPromise = new Promise((resolve, reject) => {
+                            const script = document.createElement('script')
+                            script.onload = resolve
+                            script.onerror = reject
+                            script.async = true
+                            script.src = './assets/js/fp.min.js'
+                            document.head.appendChild(script)
+                        }).then(() => FingerprintJS.load())
+
+                        fpPromise.then(fp => fp.get()).then(result => {
+                            this.uuid = result.visitorId
+                            this.getUUIDSuccessCallBack()
+                        })
+                    },
+                    initShare(){
+                        this.shareId = 0
+                        this.shareToken = ""
+                        this.shareUrl = ""
+                        this.shareData = {}
+                        this.shareModal = false
+                    },
+                    share() {
+                        this.shareName = (this.shareName.length > 0 ? this.shareName : (this.path.length > 1 ? this.path.substring(1) + "_" : "") + this.exchangeT2D(Date.parse(new Date()) / 1000, 8).split(' ')[0])
+                        this.saveShareData(this.opTypeShare, this.shareName)
+                        this.shareModal = true
+                        $("#shareName input").focus();
+                    },
+                    shareNameChange(){
+                        $("#shareName input").focus();
+                        this.saveShareData(this.opTypeShare, this.shareName)
+                    },
+                    shareOk(){
+                        this.initShare()
+                    },
+                    shareCancel(){
+                        this.initShare()
+                    },
+                    getShareData(){
+                        return {}
+                    },
+                    initOrInitShareDataFail(){
+                    },
+                    getShareDataFromServer() {
+                        var token =  this.params["token"]
+                        if(token === undefined || token.length === 0) {
+                            this.initOrInitShareDataFail({})
+                            return
+                        }
+                        axios.post('/share/getData', {
+                            uuid: this.uuid,
+                            path: this.path,
+                            token: token
+                        }).then((response) => {
+                            let resp = response.data
+                            if (resp.status === 200) {
+                                this.initShareData($.parseJSON(resp.data))
+                            } else {
+                                this.$Notice.error({
+                                    title: '提示',
+                                    desc: resp.message
+                                });
+                                this.initOrInitShareDataFail({})
+                            }
+                        })
+                    },
+                    addKeydownListener() {
+                        document.addEventListener('keydown', this.handleKeydown);
+                    },
+                    handleKeydown(event) {
+                        if (event.ctrlKey && event.key === 's') {
+                            event.preventDefault();
+                            this.download()
+                        }
+                    },
+                    download() {
+                        let shareData = Object.values(this.getShareData())
+                        this.downloadTextList = []
+                        for (var i = 0; i < shareData.length; i++) {
+                            this.downloadTextList.push({
+                                idx: i + 1,
+                                mimeType: 'text/plain',
+                                content: shareData[i],
+                            })
+                        }
+                        this.downloadModal = true
+                    },
+                    downloadFile(content, mimeType = 'text/plain') {
+                        let filename = this.shareName
+
+                        this.saveShareData(this.opTypeDownload, filename)
+
+                        for (var i = 0; i < this.mimeTypes.length; i++) {
+                            let v = this.mimeTypes[i]
+                            if (v.key === mimeType) {
+                                filename += v.label
+                                break
+                            }
+                        }
+
+                        // 创建 Blob 对象
+                        const blob = new Blob([content], { type: mimeType });
+
+                        // 创建临时链接
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+
+                        // 触发下载
+                        a.click();
+
+                        // 释放内存
+                        URL.revokeObjectURL(url);
+                    },
+                    collect() {
+                        this.initShare()
+                        this.collectModal = true
+                    },
+                    collectOk() {
+                        if (this.shareName.length === 0) {
+                            return
+                        }
+                        this.saveShareData(this.opTypeCollect, this.shareName)
+                    },
+                    collectCancel() {
+                        this.collectModal = false
+                    },
+                    saveShareData(opType, name) {
+                        this.shareToken = this.guid()
+                        this.shareUrl = this.local + this.path + "?token=" + this.shareToken + "&name=" + this.shareName
+                        this.copy(this.shareUrl)
+                        this.shareData = this.getShareData()
+                        axios.post('/share/saveData', {
+                            id: this.shareId,
+                            opType: opType,
+                            uuid: this.uuid,
+                            path: this.path,
+                            token: this.shareToken,
+                            name: name,
+                            data: this.shareData,
+                        }).then((response) => {
+                            let resp = response.data
+                            if (resp.status === 200) {
+                                this.shareId = resp.data.id
+                                if (resp.data.token) {
+                                    this.shareToken = resp.data.token
+                                    this.shareUrl = this.local + this.path + "?token=" + this.shareToken + "&name=" + this.shareName
+                                }
+
+                                let desc = "收藏成功"
+                                if (opType === this.opTypeShare) {
+                                    desc = "分享成功，并复制到剪切板"
+                                }
+                                if (opType === this.opTypeDownload) {
+                                    desc = "下载成功"
+                                }
+                                this.$Notice.success({
+                                    title: '提示',
+                                    desc: desc
+                                });
+                            } else {
+                                this.$Notice.error({
+                                    title: '提示',
+                                    desc: resp.message
+                                });
+                            }
+                        })
+                    },
+                    copy(v, isNotice){
+                        $("#copyText").css('display', 'inline')
+                        $("#copyText").val(v)
+                        $("#copyText").select();
+                        document.execCommand('copy')
+                        $("#copyText").css('display', 'none')
+                        if (isNotice === true) {
+                            this.$Notice.success({
+                                title: '提示',
+                                desc: '已复制到剪切板'
+                            });
+                        }
+                    },
+                    guid() {
+                        return 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                            var r = Math.random() * 16 | 0,
+                                v = c === 'x' ? r : (r & 0x3 | 0x8);
+                            return v.toString(16);
+                        });
+                    },
+                    generateRandomString(length) {
+                        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                        let result = '';
+                        for (let i = 0; i < length; i++) {
+                            result += characters.charAt(Math.floor(Math.random() * characters.length));
+                        }
+                        return result;
+                    },
+                    getUUIDSuccessCallBack() {
+                        this.getShareDataFromServer()
+                        this.getUserName()
+                    },
+                    getUserIdSuccessCallBack() {
+
+                    },
+                    getUserName(){
+                        let userName = $.cookie('UserName')
+                        if (userName === undefined) {
+                            userName = ""
+                        }
+                        this.userName = userName
+                        if (this.userName.length === 0) {
+                            this.userName = this.generateRandomString(8)
+                        }
+                        this.saveUserName()
+                    },
+                    saveUserName() {
+                        if (this.userName.length < 3) {
+                            this.$Notice.error({
+                                title: '提示',
+                                desc: "长度不能少于3"
+                            });
+                            return
+                        }
+                        axios.post('/user/save', {
+                            name: this.userName,
+                            uuid: this.uuid,
+                        }).then((response) => {
+                            let resp = response.data
+                            if (resp.status === 200) {
+                                this.userId = resp.userId
+                                this.userAgents = resp.userAgents
+                                $.cookie('UserName', this.userName);
+                                this.getUserIdSuccessCallBack()
+                            } else {
+                                this.$Notice.error({
+                                    title: '提示',
+                                    desc: resp.message
+                                });
+                            }
+                        })
+                    },
+                },
+                mounted() {
+                    const that = this
+                    window.onresize = () => {
+                        return (() => {
+                            that.onresize()
+                        })()
+                    }
+                    this.nowDate = this.exchangeT2D(Date.parse(new Date()) / 1000 - 8 * 60 * 60)
+                    this.getUUID()
+                    this.getParam()
+                    this.addKeydownListener();
+                },
+                beforeDestroy() {
+                    document.removeEventListener('keydown', this.handleKeydown);
+                },
+            }
+
+            render.mixins = [myMixin]
+            const app = Vue.createApp(render);
+            app.use(ViewUIPlus);
+            app.mount("#app");
+        </script>
+
+        <script>
+            var _hmt = _hmt || [];
+            (function() {
+              var hm = document.createElement("script");
+              hm.src = "https://hm.baidu.com/hm.js?0c10428bc0570df285a796a1ffe6e9af";
+              var s = document.getElementsByTagName("script")[0];
+              s.parentNode.insertBefore(hm, s);
+            })();
+        </script>
+
+
+<script>
+    // 粒子背景实现
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // 设置画布尺寸为窗口尺寸
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    // 初始化窗口大小
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // 粒子类
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.size = Math.random() * 1 + 1;
+            this.speedX = Math.random() * 1 - 0.5;
+            this.speedY = Math.random() * 1 - 0.5;
+            // this.color = `rgba(100, 181, 246, ${Math.random() * 0.4 + 0.1})`;
+            this.color = `rgba(0, 102, 136, ${Math.random() * 0.4 + 0.1})`;
+        }
+
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+
+            // 边界检查
+            if (this.x > canvas.width) this.x = 0;
+            else if (this.x < 0) this.x = canvas.width;
+
+            if (this.y > canvas.height) this.y = 0;
+            else if (this.y < 0) this.y = canvas.height;
+        }
+
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    // 创建粒子数组
+    const particles = [];
+    const particleCount = Math.min(Math.floor(canvas.width * canvas.height / 20000), 150);
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+    }
+
+    // 绘制粒子间的连线
+    function drawLines() {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 100) {
+                    const opacity = 1 - distance / 100;
+                    ctx.strokeStyle = `rgba(64, 124, 255, ${opacity * 0.2})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    // 鼠标互动效果
+    let mouseX = 0;
+    let mouseY = 0;
+    let mouseRadius = 100;
+
+    canvas.addEventListener('mousemove', (e) => {
+        mouseX = e.x;
+        mouseY = e.y;
+    });
+
+    // 动画循环
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 绘制连线
+        drawLines();
+
+        // 更新并绘制粒子
+        particles.forEach(particle => {
+            // 鼠标互动
+            const dx = particle.x - mouseX;
+            const dy = particle.y - mouseY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < mouseRadius) {
+                const force = (mouseRadius - distance) / mouseRadius;
+                const angle = Math.atan2(dy, dx);
+                particle.x += Math.cos(angle) * force * 2;
+                particle.y += Math.sin(angle) * force * 2;
+            }
+
+            particle.update();
+            particle.draw();
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    // 启动动画
+    // animate();
+</script>
+
+    </body>
+</html>
+
+{{end}}

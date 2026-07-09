@@ -1,0 +1,285 @@
+
+{{template "header" .}}
+
+<section v-show="!loadding">
+
+    <Tabs v-model="id" :animated="false" >
+        <Tab-Pane label="新增+" :name="'' + tempDspId">
+        </Tab-Pane>
+
+        <Tab-Pane :label="item.name" :name="'' + item.id" v-for="item in dspMap">
+        </Tab-Pane>
+    </Tabs>
+
+    <i-Form :label-width="120">
+        <Form-Item label="名称：">
+            <i-Input v-model="name" class="key"></i-Input>
+        </Form-Item>
+        <Form-Item label="唯一Key：">
+            <i-Input v-model="unique_key" class="key"></i-Input>
+            <i-button type="primary" style="margin-left: 10px" @click="save()">保存</i-button>
+        </Form-Item>
+        <Form-Item label="Api地址：">
+            <a v-html="adxApi"></a>
+        </Form-Item>
+        <Form-Item label="DSP 响应：">
+            <div style="background-color: #d5dbe7;padding: 5px;font-weight: 600">
+                {<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;"id": "&nbsp;<i-Input v-model="request_id" class="key"></i-Input>&nbsp;", <span style="font-weight: 100;font-style: italic;">//默认为 {REQUEST_ID} ，替换成请求 id</span><br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;"seatbid":<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;[<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bid":<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"price":  &nbsp;<i-Input v-model="price" class="key"></i-Input>&nbsp;,<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"adm": "<br/><i-Input v-model="adm" type="textarea" :rows="30" style="width: 90%;margin-left: 120px"></i-Input>",<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bundle": "&nbsp;<i-Input v-model="bundle" class="key"></i-Input>&nbsp;",<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"crid": "&nbsp;<i-Input v-model="crid" class="key"></i-Input>&nbsp;"<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"ext":<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"deeplink": "&nbsp;<i-Input v-model="deeplink" class="key"></i-Input>&nbsp;"<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"deeplinkfallbackurl": "&nbsp;<i-Input v-model="deeplinkfallbackurl" class="key"></i-Input>&nbsp;"<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"fallback": "&nbsp;<i-Input v-model="fallback" class="key"></i-Input>&nbsp;"<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;]<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;]<br/>
+                }<br/>
+            </div>
+        </Form-Item>
+<!--        <Form-Item label="日志内容">-->
+<!--            <i-Input v-model="noticeListText" type="textarea" :rows="5" style="width: 100%"></i-Input>-->
+<!--        </Form-Item>-->
+    </i-Form>
+
+</section>
+
+<Spin :show="loadding" size="large"></Spin>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                dspMap:[],
+
+                id:"",
+                name:"",
+                unique_key:"",
+                adxApi:"",
+
+                request_id:"",
+                price:0,
+                adm:"",
+                bundle:"",
+                crid:"",
+                deeplink:"",
+                deeplinkfallbackurl:"",
+                fallback:"",
+
+
+                loadding:true,
+                tempDspId:100000,
+
+                noticeListText:"",
+                noticeId:0,
+            }
+        },
+        watch:{
+            unique_key(v){
+                this.adxApi = this.local + "/adx/" + this.unique_key
+            },
+            id(v){
+                this.setSelectedDsp(v)
+            }
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "id":this.id
+                }
+            },
+            initShareData(data) {
+                this.id = data["id"]
+            },
+            save() {
+                let id = parseInt(this.id) == this.tempDspId ? 0 : parseInt(this.id)
+                this.unique_key = this.unique_key.trim(" ")
+                this.request_id = this.request_id.trim(" ")
+                this.bundle = this.bundle.trim(" ")
+                this.crid = this.crid.trim(" ")
+
+                var self = this
+                axios.post('/adx/adxDspSave', {
+                    id: id,
+                    name: this.name,
+                    unique_key: this.unique_key,
+                    request_id: this.request_id,
+                    price: parseFloat(this.price),
+                    adm: this.adm,
+                    bundle: this.bundle,
+                    crid: this.crid,
+                    deeplink: this.deeplink,
+                    deeplinkfallbackurl: this.deeplinkfallbackurl,
+                    fallback: this.fallback,
+                }).then(function (response) {
+                    let resp = response.data
+                    if (resp.status === 200) {
+                        self.$Notice.success({
+                            title: '提示',
+                            desc: '保存成功'
+                        });
+                        self.dspMap.forEach((item, idx) => {
+                            if (item.id == id) {
+                                self.dspMap[idx].name = self.name
+                            }
+                        })
+                        if (id === 0) {
+                            self.getDspList()
+                        }
+                    } else {
+                        self.$Notice.error({
+                            title: '提示',
+                            desc: '保存失败'
+                        });
+                    }
+                })
+            },
+            getDspList(){
+                var self = this
+                axios.post('/adx/adxGetDspList', {}).then(function (response) {
+
+                    self.loadding = false
+
+                    let resp = response.data;
+                    let dspMap = []
+
+                    if (resp.length > 0) {
+                        let defaultId = 0
+                        resp.forEach((item, idx) => {
+                            if (defaultId == 0) {
+                                defaultId = item.id
+                            }
+                            dspMap[idx] = item
+                        })
+                        self.dspMap = dspMap
+                        self.id = defaultId+""
+                    }
+                })
+            },
+            getDspResponse(){
+                var self = this
+                axios.get('/adx/adxGetDspResponse', {
+                    params: {
+                        id: this.id
+                    }
+                }).then(function (response) {
+                    var  resp = response.data
+                    self.request_id = resp.data.request_id
+                    self.price = resp.data.price
+                    self.adm = resp.data.adm
+                    self.bundle = resp.data.bundle
+                    self.crid = resp.data.crid
+                    self.deeplink = resp.data.deeplink
+                    self.deeplinkfallbackurl = resp.data.deeplinkfallbackurl
+                    self.fallback = resp.data.fallback
+                })
+            },
+            setSelectedDsp(id){
+
+                if (parseInt(id) === this.tempDspId){
+                    this.name = ""
+                    this.unique_key = ""
+                    this.request_id = "{REQUEST_ID}"
+                    this.price = "99.99"
+                    this.adm = ""
+                    this.bundle = ""
+                    this.crid = ""
+                    this.deeplink = ""
+                    this.deeplinkfallbackurl = ""
+                    this.fallback = ""
+                    this.noticeListText = ""
+                    this.noticeId = 0
+                    return
+                }
+
+                var self = this
+                for (i = 0; i < this.dspMap.length; i ++) {
+
+                    if (this.dspMap[i].id === parseInt(id)) {
+                        self.name = this.dspMap[i].name
+                        self.unique_key = this.dspMap[i].unique_key
+                        self.request_id = this.dspMap[i].request_id
+                        self.price = parseFloat(this.dspMap[i].price)
+                        self.adm = this.dspMap[i].adm
+                        self.bundle = this.dspMap[i].bundle
+                        self.crid = this.dspMap[i].crid
+
+                        self.getDspResponse(id)
+                    }
+                }
+            },
+            getDspNotice() {
+                if (this.id <= 0) {
+                    return
+                }
+
+                if (parseInt(this.id) === this.tempDspId) {
+                    return
+                }
+
+                var self = this
+
+                axios.get('/adx/adxGetDspNotice', {
+                    params: {
+                        id: this.id,
+                        noticeId:this.noticeId,
+                        nowDate:this.nowDate
+                    }
+                }).then(function (response) {
+                    var  resp = response.data
+
+                    if (resp.length === 0) {
+                        return
+                    }
+
+                    resp.forEach((item, idx) => {
+
+                        if (idx == resp.length - 1) {
+                            self.noticeId = item.id
+                        }
+
+                        let notice =
+                            item.id + " " +
+                            "【" + item.createtime + "】 " +
+                            "【" + item.notice_type_name + "】 " +
+                            "【" + item.ip + "】 " +
+                            "【" + item.ua + "】 " +
+                            "\n"
+
+                        self.noticeListText = notice + self.noticeListText
+                    })
+                })
+            }
+        },
+        mounted(){
+            this.getDspList()
+
+            var self = this
+
+            // window.setInterval(self.getDspNotice, 5000);
+        }
+    }
+</script>
+
+{{template "footer" .}}
+
+<style>
+    .key {
+        width: 200px;
+        /*margin-left: 10px;*/
+        /*margin-top: 10px;*/
+    }
+</style>

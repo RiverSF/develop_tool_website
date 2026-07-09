@@ -1,0 +1,31 @@
+
+{{template "header" .}}
+
+<section style="padding: 12px;">
+    <i-input v-model="jsonText" type="textarea" :rows="12" placeholder="输入 JSON"></i-input>
+    <i-button type="primary" style="margin-top: 12px" @click="convert">转换为 Go Struct</i-button>
+    <i-input v-model="result" type="textarea" :rows="16" style="margin-top: 12px" readonly></i-input>
+</section>
+
+<script>
+    var render = {
+        data() {
+            return {
+                jsonText: "",
+                result: ""
+            }
+        },
+        methods: {
+            convert() {
+                axios.post('/dev/json2gostruct', { json: this.jsonText }).then((response) => {
+                    const resp = response.data
+                    if (resp.status === 200) {
+                        this.result = resp.result
+                    } else {
+                        this.$Notice.error({ title: '提示', desc: resp.message || 'convert failed' })
+                    }
+                })
+            }
+        }
+    }
+</script>

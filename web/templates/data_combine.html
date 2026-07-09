@@ -1,0 +1,130 @@
+
+{{template "header" .}}
+
+<section>
+    <div class="demo-split" :style='{"height": clientHeight-180 + "px", "border": "1px solid #dcdee2"}'>
+        <Split v-model="dataFilterSplit">
+            <template #left>
+                <div class="demo-split-pane">
+                    <i-Input v-model="dataPrimary" type="textarea" :border="false" :rows="(clientHeight - 210) / 21" placeholder="正文内容......"></i-Input>
+                </div>
+            </template>
+            <template #right>
+                <div class="demo-split-pane">
+                    <i-Input v-model="dataSecondary" type="textarea" :border="false" :rows="(clientHeight - 210) / 21" placeholder="副文内容......"></i-Input>
+                </div>
+            </template>
+        </Split>
+    </div>
+
+    <div style="margin-top: 10px">
+        <i-button type="primary"  @click="combine()">合并 >></i-button> &nbsp;&nbsp;
+        <i-button type="primary"  @click="splitC()">拆分 >></i-button> &nbsp;&nbsp;
+        &nbsp;分隔符：<i-Input v-model="split" style="width: 200px"></i-Input>&nbsp;
+
+        <span style="margin-left: 10px" v-html="'正文:'+dataPrimaryLineNumber + '   ' + '副文:'+dataSecondaryLineNumber + '   ' + '结果:'+dataResultLineNumber "></span>
+    </div>
+    <div class="demo-split-pane" style="margin-top: 10px;width: 70%">
+        <i-Input v-model="dataResult" type="textarea" :border="true" :rows="(contentHeight - clientHeight)/ 21 " placeholder="结果内容......"></i-Input>
+    </div>
+</section>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                dataFilterSplit:0.5,
+                dataPrimary:"",
+                dataSecondary:"",
+                dataResult:"",
+                dataPrimaryLineNumber:0,
+                dataSecondaryLineNumber:0,
+                dataResultLineNumber:0,
+                split:"|",
+            }
+        },
+        watch:{
+            dataPrimary(){
+                this.getDataLineNumber()
+            },
+            dataSecondary(){
+                this.getDataLineNumber()
+            },
+            dataResult(){
+                this.getDataLineNumber()
+            },
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "dataPrimary":this.dataPrimary,
+                    "dataSecondary":this.dataSecondary,
+                    "dataResult":this.dataResult,
+                    "split":this.split,
+                }
+            },
+            initShareData(data) {
+                this.dataPrimary = data["dataPrimary"]
+                this.dataSecondary = data["dataSecondary"]
+                this.dataResult = data["dataResult"]
+                this.split = data["split"]
+            },
+            combine(){
+                var recordsPrimary = this.dataPrimary.split("\n")
+                var recordsSecondary = this.dataSecondary.split("\n")
+                var result = ""
+
+                maxLine = recordsPrimary.length > recordsSecondary.length ? recordsPrimary.length : recordsSecondary.length
+
+                for (i = 0; i < maxLine ; i ++) {
+                    var p1 = recordsPrimary[i]
+                    var p2 = recordsSecondary[i]
+                    if (p1 !== undefined) {
+                        result += p1
+                    }
+                    result += this.split
+                    if (p2 !== undefined) {
+                        result += p2
+                    }
+                    result += "\n"
+                }
+
+                this.dataResult = result.trimEnd("\n")
+            },
+            splitC(){
+                var recordsPrimary = this.dataPrimary.split("\n")
+                this.dataResult = this.dataPrimary
+                var c1 = ""
+                var c2 = ""
+                for (i = 0; i < recordsPrimary.length ; i ++) {
+                    if (recordsPrimary[i] === undefined) {
+                        continue
+                    }
+                    arr = recordsPrimary[i].split(this.split)
+
+                    if (arr[0] === undefined) {
+                        arr[0] = ""
+                    }
+                    if (arr[1] === undefined) {
+                        arr[1] = "null"
+                    }
+                    c1 += arr[0] + "\n"
+                    c2 += arr[1] + "\n"
+                }
+                this.dataPrimary = c1.trimEnd("\n")
+                this.dataSecondary = c2.trimEnd("\n")
+            },
+            getDataLineNumber(){
+                this.dataPrimaryLineNumber = this.dataPrimary.length > 0 ? this.dataPrimary.split("\n").length : 0
+                this.dataSecondaryLineNumber = this.dataSecondary.length > 0 ? this.dataSecondary.split("\n").length : 0
+                this.dataResultLineNumber = this.dataResult.length > 0 ? this.dataResult.split("\n").length : 0
+            }
+        },
+        mounted(){
+            this.contentHeight = this.clientHeight * 2 - 120
+        }
+    }
+</script>
+
+{{template "footer" .}}

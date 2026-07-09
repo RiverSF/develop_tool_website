@@ -1,0 +1,239 @@
+
+{{template "header" .}}
+
+<section>
+    <div style="padding: 0px 12px 12px 30px;">
+        <b>语言：</b>&nbsp;&nbsp;
+        <i-Select filterable clearable v-model="language" style="width: 10%" @on-change="changeLanguage">
+            <i-Option v-for="item in languages" :value="item.key" :key="item.key">
+                <span v-html="item.label"></span>
+            </i-Option>
+        </i-Select>
+
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <b>主题：</b>&nbsp;&nbsp;
+
+        <i-Select v-model="theme" style="width: 10%" @on-change="changeTheme">
+            <i-Option v-for="item in themes" :value="item.key" :key="item.key">
+                <span v-html="item.label"></span>
+            </i-Option>
+        </i-Select>
+
+        <Poptip placement="bottom-start" width="400" style="margin-left: 20px" >
+            <i-Button>快捷键</i-Button>
+            <template #content>
+                <div class="api">
+                    <table style="text-align: left">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%"><a href="https://github.com/crper/Visual-Studio-Code-CNKEYMAP" target="_blank">快捷键</a></th>
+                                <th>作用</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="item in quickOperations">
+                                <td v-html="item.key"></td>
+                                <td v-html="item.value"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </Poptip>
+    </div>
+
+    <div :style='{"height": contentHeight + "px", "border": "1px solid #dcdee2"}'>
+        <div id="editor" style="height: 100%;width: 100%" ></div>
+    </div>
+</section>
+
+
+<script>
+    var require = {paths: {vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.34.0/min/vs' } };
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.34.0/min/vs/loader.js"></script>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                editor: 0,
+                model111:0,
+                content: "",
+                theme: "",
+                themes: [
+                    {"key": "vs", "label": "亮色", "label1": "Visual Studio"},
+                    {"key": "vs-dark", "label": "暗色", "label2": "Visual Studio Dark"},
+                    {"key": "hc-black", "label": "高亮", "label2": "High Contrast Dark"},
+                ],
+                themeColor: {
+                    "vs": "#ffffff",
+                    "vs-dark": "#1e1e1e",
+                    "hc-black": "#000000",
+                },
+                language:"json",
+                languages: [
+                    {"key": 'html', "label": 'html'},
+                    {"key": 'javascript', "label": 'javascript'},
+                    {"key": 'json', "label": 'json'},
+                    {"key": 'go', "label": 'go'},
+                    {"key": 'php', "label": 'php'},
+                    {"key": 'python', "label": 'python'},
+                    {"key": 'shell', "label": 'shell'},
+                    {"key": 'java', "label": 'java'},
+                    {"key": 'sql', "label": 'sql'},
+
+                    {"key": 'json', "label": '--------------------------------------------'},
+
+                    {"key": 'apex', "label": 'apex'},
+                    {"key": 'azcli', "label": 'azcli'},
+                    {"key": 'bat', "label": 'bat'},
+                    {"key": 'c', "label": 'c'},
+                    {"key": 'clojure', "label": 'clojure'},
+                    {"key": 'coffeescript', "label": 'coffeescript'},
+                    {"key": 'cpp', "label": 'cpp'},
+                    {"key": 'csharp', "label": 'csharp'},
+                    {"key": 'csp', "label": 'csp'},
+                    {"key": 'css', "label": 'css'},
+                    {"key": 'dockerfile', "label": 'dockerfile'},
+                    {"key": 'fsharp', "label": 'fsharp'},
+                    {"key": 'go', "label": 'go'},
+                    {"key": 'graphql', "label": 'graphql'},
+                    {"key": 'handlebars', "label": 'handlebars'},
+                    {"key": 'html', "label": 'html'},
+                    {"key": 'ini', "label": 'ini'},
+                    {"key": 'java', "label": 'java'},
+                    {"key": 'javascript', "label": 'javascript'},
+                    {"key": 'json', "label": 'json'},
+                    {"key": 'kotlin', "label": 'kotlin'},
+                    {"key": 'less', "label": 'less'},
+                    {"key": 'lua', "label": 'lua'},
+                    {"key": 'markdown', "label": 'markdown'},
+                    {"key": 'msdax', "label": 'msdax'},
+                    {"key": 'mysql', "label": 'mysql'},
+                    {"key": 'objective-c', "label": 'objective-c'},
+                    {"key": 'pascal', "label": 'pascal'},
+                    {"key": 'perl', "label": 'perl'},
+                    {"key": 'pgsql', "label": 'pgsql'},
+                    {"key": 'php', "label": 'php'},
+                    {"key": 'plaintext', "label": 'plaintext'},
+                    {"key": 'postiats', "label": 'postiats'},
+                    {"key": 'powerquery', "label": 'powerquery'},
+                    {"key": 'powershell', "label": 'powershell'},
+                    {"key": 'pug', "label": 'pug'},
+                    {"key": 'python', "label": 'python'},
+                    {"key": 'r', "label": 'r'},
+                    {"key": 'razor', "label": 'razor'},
+                    {"key": 'redis', "label": 'redis'},
+                    {"key": 'redshift', "label": 'redshift'},
+                    {"key": 'ruby', "label": 'ruby'},
+                    {"key": 'rust', "label": 'rust'},
+                    {"key": 'sb', "label": 'sb'},
+                    {"key": 'scheme', "label": 'scheme'},
+                    {"key": 'scss', "label": 'scss'},
+                    {"key": 'shell', "label": 'shell'},
+                    {"key": 'sol', "label": 'sol'},
+                    {"key": 'sql', "label": 'sql'},
+                    {"key": 'st', "label": 'st'},
+                    {"key": 'swift', "label": 'swift'},
+                    {"key": 'tcl', "label": 'tcl'},
+                    {"key": 'typescript', "label": 'typescript'},
+                    {"key": 'vb', "label": 'vb'},
+                    {"key": 'xml', "label": 'xml'},
+                    {"key": 'yaml', "label": 'yaml'},
+                ],
+                quickOperations:[
+                    {"key":"Ctr + F","value":"查询 & 替换"},
+                    {"key":"Ctr + H","value":"替换"},
+                    {"key":"Alt + Click","value":"插入光标-支持多个"},
+                    {"key":"Shift + Alt + I","value":"插入光标到选中范围内所有行结束符"},
+                    {"key":"Shift + Alt + F","value":"Json 内容格式化"},
+                ]
+            }
+        },
+        watch:{
+
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content":this.content,
+                    "language":this.language,
+                    "theme":this.theme
+                }
+            },
+            initShareData(data) {
+                this.content = data["content"]
+                this.language = data["language"]
+                this.theme = data["theme"]
+                this.render(this.content, this.theme, this.language)
+                this.changeTheme()
+            },
+            initOrInitShareDataFail(){
+                this.render(this.content, this.theme, this.language)
+            },
+            render(content, theme, language) {
+                require(['vs/editor/editor.main'], () => {
+                    monaco.editor.setTheme(theme);
+                    model = monaco.editor.createModel(content, language)
+                    this.editor = monaco.editor.create(document.getElementById('editor'), {
+                        // value:"123123",
+                        model: model,
+                        wordWrap: true,
+                        autoIndent: true, // 自动布局
+                        automaticLayout: false, // 自动布局
+                        formatOnPaste: false, //是否粘贴自动格式化
+                        foldingImportsByDefault: true,
+                        scrollBeyondLastLine:false,
+                        gotoLocation:false,
+                        foldingStrategy: "indentation",
+                        useShadowDOM:true,
+                    });
+
+                    model.onDidChangeContent((e) => {
+                        this.content = model.getValue()
+                    })
+
+                });
+            },
+            changeLanguage(){
+                if (monaco !== undefined) {
+                    monaco.editor.setModelLanguage(this.editor.getModel(), this.language)
+                }
+            },
+            changeTheme(){
+                this.contentBackgroundColor = this.themeColor[this.theme]
+                setInterval(() => {
+                    monaco.editor.setTheme(this.theme);
+                }, 500)
+            },
+        },
+        mounted() {
+        }
+    }
+
+</script>
+
+{{template "footer" .}}
+
+<style>
+    .ivu-select-dropdown{
+        max-height: 500px;
+    }
+    .top,.bottom{
+        text-align: center;
+    }
+    .center{
+        width: 300px;
+        margin: 10px auto;
+        overflow: hidden;
+    }
+    .center-left{
+        float: left;
+    }
+    .center-right{
+        float: right;
+    }
+</style>

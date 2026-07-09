@@ -1,0 +1,379 @@
+
+{{template "header" .}}
+
+<section>
+
+    <div style="width: 90%;float: left;margin-left: 5%">
+        <i-Input v-model="content1" type="textarea" class="glass-input" :rows="globalTextareaRowsWithButton/2"></i-Input>
+        <Icon type="ios-alert"></Icon> 提示：建议从Excel文档中复制内容
+    </div>
+
+    <div class="chart-container">
+        <div id="distributionChart"></div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<script>
+    var render = {
+        data () {
+            return {
+                content1: "",
+                results:[],
+                chart: null,
+                loadding:true,
+            }
+        },
+        watch: {
+            content1(){
+                this.conv()
+            }
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content1":this.content1,
+                }
+            },
+            initShareData(data) {
+                this.content1 = data["content1"]
+                this.conv()
+            },
+            initOrInitShareDataFail(){
+                this.conv()
+            },
+            conv() {
+                this.loadding = true
+                const { headers, data } = this.parseData(this.content1);
+
+                if (headers.length === 0 || headers.length > 21) {
+                    return
+                }
+
+                console.log("headers:", headers)
+                console.log("data:", data)
+
+                // 准备X轴数据（时间）
+                const xData = data.map(item => {
+                    return item[headers[0]]
+                });
+
+                console.log("xData", xData)
+
+                const colors = ["#1f77b4","#d62728","#2ca02c","#9467bd","#ff7f0e","#7f7f7f","#ffd700","#e377c2","#17becf","#8c564b","#ff7f50","#bcbd22","#4b0082","#808000","#b22222","#32cd32","#ff6600","#4169e1","#ff1493","#708090"];
+
+                var metrics = []
+                for (var i = 0; i < headers.length;i++){
+                    if (i === 0) {
+                        continue
+                    }
+                    metrics.push(
+                        { name: headers[i], key: headers[i], color: colors[i-1], unit: '', gridIndex: i }
+                    )
+                }
+
+                var dom = document.getElementById('distributionChart');
+                dom.style.height = metrics.length * 350+100+"px"
+
+                console.log("metrics:", metrics)
+
+                // 动态计算每个grid的高度
+                const gridHeight = (100-10) / metrics.length;
+                const grids = metrics.map((metric, index) => ({
+                    left: '10%',
+                    right: '5%',
+                    height: `300px`,
+                    top: `${index*350+50+'px'}`,
+                    show: true,
+                    borderWidth: 0,
+                }));
+
+                console.log("grids:", grids)
+
+                // 创建X轴配置
+                const xAxis = metrics.map((metric, index) => ({
+                    type: 'category',
+                    gridIndex: index,
+                    data: data.map((item, i) => xData[i]),
+                    // axisLine: { onZero: false, lineStyle: { color: '#546E7A' } },
+                    axisLabel: {
+                        show: index === metrics.length - 1,
+                        color: '#90A4AE',
+                        fontWeight:'bold'
+                    },
+                    splitLine: { show: false },
+                    axisTick: { show: index === metrics.length - 1 }
+                }));
+
+                // 创建Y轴配置
+                const yAxis = metrics.map((metric, index) => ({
+                    type: 'value',
+                    gridIndex: index,
+                    scale: true,
+                    splitLine: { show: true, lineStyle: { color: 'rgba(84, 110, 122, 0.3)' } },
+                    axisLabel: {
+                        color: '#90A4AE',
+                        fontWeight:'bold',
+                        formatter: '{value}'
+                    },
+                    name: metric.name,
+                    nameTextStyle: {
+                        color: '#29282c',
+                        fontWeight:'bold'
+                    }
+                }));
+
+                // 创建系列数据
+                const series = metrics.map((metric, index) => ({
+                    name: metric.name,
+                    type: 'line',
+                    xAxisIndex: index,
+                    yAxisIndex: index,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    showSymbol: false,
+                    smooth: true,
+                    lineStyle: {
+                        width: 2,
+                        color: metric.color
+                    },
+                    // areaStyle: {
+                    //     // color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    //     //     { offset: 0, color: metric.color + '80' },
+                    //     //     { offset: 1, color: metric.color + '10' }
+                    //     // ])
+                    // },
+                    data: data.map((item, i) => [xData[i], item[metric.key]]),
+                    "markArea": {
+                        "itemStyle": {
+                            "color": "rgba(210, 210, 247, 0.6)"
+                        },
+                        "data": [
+                            // [
+                            //     {"name": "高亮", "xAxis": "2025-07-14 07"},
+                            //     {"xAxis": "2025-07-15 03"},
+                            // ],
+                            [
+                                {"name": "0利润", "xAxis": "2025-07-15 07"},
+                                {"xAxis": "2025-07-16 03"},
+                            ]
+                        ]
+                    }
+                }));
+
+                console.log("series", series)
+
+                // 配置dataZoom
+                const dataZoom = [
+                    {
+                        type: 'inside',
+                        xAxisIndex: Array.from({length: metrics.length}, (_, i) => i),
+                        start: 0,
+                        end: 100,
+                        zoomLock: true
+                    },
+                    // {
+                    //     type: 'slider',
+                    //     // xAxisIndex: Array.from({length: metrics.length}, (_, i) => i),
+                    //     xAxisIndex: [0],
+                    //     top: '95%',
+                    //     height: 20,
+                    //     handleSize: '8',
+                    //     handleStyle: { color: 'rgba(79, 195, 247, 0.5)' },
+                    //     fillerColor: 'rgba(79, 195, 247, 0.2)',
+                    //     borderColor: 'transparent',
+                    //     backgroundColor: 'rgba(30, 40, 50, 0.5)',
+                    //     textStyle: { color: '#90A4AE' },
+                    //     showDetail: false,
+                    //     // moveOnMouseWheel: false,    // 关闭滚轮事件
+                    //     // preventDefaultMouseMove: false, // 允许默认事件
+                    //     start: 0,
+                    //     end: 100,
+                    //     show: true,
+                    //     filterMode: 'filter',
+                    //     realtime: false,
+                    // }
+                ];
+
+                // 配置tooltip
+                const tooltip = {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'cross',
+                        link: { xAxisIndex: 'all' },
+                    },
+                    backgroundColor: 'rgba(30, 40, 50, 0.9)',
+                    borderColor: 'rgba(79, 195, 247, 0.5)',
+                    borderWidth: 1,
+                    textStyle: { color: '#E0E0E0' },
+                    padding: 2,
+                    formatter: function(params) {
+                        // const date = new Date(params[0].axisValue);
+                        // const dateStr = date.toISOString().split('T')[0] + ' ' + date.getHours() + ':00';
+
+                        let html = `<div style="font-size: 16px; margin-bottom: 10px; color: #4FC3F7; font-weight: bold;">${params[0].axisValue}</div>`;
+
+                        params.forEach(param => {
+                            const value = param.value[1];
+                            const metric = metrics.find(m => m.name === param.seriesName);
+                            if (value === undefined) {
+                                return
+                            }
+                            let displayValue = value.toLocaleString();
+
+                            let unit = ""
+                            if (param.seriesName.includes('率')) {
+                                unit = "%"
+                            }
+
+                            html += `
+                        <div style="display: flex; align-items: center; margin: 5px 0;">
+                            <div style="width: 12px; height: 3px; background: ${param.color}; margin-right: 8px;"></div>
+                            <div style="flex: 1; min-width: 100px;">${param.seriesName}</div>
+                            <div style="font-weight: bold;">${displayValue}${unit}</div>
+                        </div>`;
+                        });
+
+                        return html;
+                    }
+                };
+
+                // 配置图表选项
+                const option = {
+                    backgroundColor: 'transparent',
+                    tooltip,
+                    legend: {
+                        data: metrics.map(m => m.name),
+                        right: '3%',
+                        top: 0,
+                        textStyle: { color: '#CFD8DC' },
+                        inactiveColor: '#546E7A',
+                        selectedMode: 'multiple'
+                    },
+                    axisPointer: {
+                        type: 'cross',
+                        link: { xAxisIndex: 'all' },
+                    },
+                    grid: grids,
+                    xAxis,
+                    yAxis,
+                    dataZoom,
+                    series,
+                    textStyle: {
+                        color: '#90A4AE'
+                    },
+                };
+
+                console.log("option", option)
+
+                // 销毁现有图表
+                if (this.chart) {
+                    this.chart.dispose();
+                }
+
+
+                let chart = echarts.init(dom, "", {
+                    renderer: 'canvas',
+                    useDirtyRect: false
+                });
+                window.addEventListener('resize', chart.resize);
+
+                // 设置图表选项
+                try {
+                    chart.setOption(option, true);
+                } catch (error) {
+                    console.error("ECharts error:", error);
+                }
+
+                setTimeout(() => {
+                    chart.resize()
+                }, 1500)
+
+                this.chart = chart
+
+                this.loadding = false
+            },
+            parseData(rawData) {
+                const lines = rawData.split('\n');
+                const headers = lines[0].trim().split('\t').map(h => h.trim());
+                const data = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const cols = line.split('\t');
+                    const row = {};
+
+                    headers.forEach((header, index) => {
+                        let value = cols[index].trim();
+
+                        if (index === 0) {
+                            row[header] = value;
+                            return
+                        }
+
+                        // 数据清洗
+                        if (value.includes('$')) {
+                            value = parseFloat(value.replace(/[$,]/g, ''));
+                        } else if (value.includes('%')) {
+                            value = parseFloat(value.replace(/%/g, ''));
+                        }else if (value.includes(',')) {
+                            value = parseFloat(value.replace(/,/g, ''));
+                        } else if (!isNaN(value)) {
+                            value = parseFloat(value);
+                        }
+
+                        row[header] = value;
+                    });
+
+                    data.push(row);
+                }
+
+                return { headers, data };
+            },
+            formatCurrency(amount) {
+                return Number(amount).toFixed(2);
+            }
+        },
+        mounted(){
+            this.content1 = '时间\t竞价底价 eCPM\t竞价响应率\n' +
+                '2025-07-14 00\t$24.44 \t0.14%\n' +
+                '2025-07-14 01\t$23.52 \t0.08%\n' +
+                '2025-07-14 02\t$23.56 \t0.02%\n' +
+                '2025-07-14 03\t$23.84 \t0.04%\n' +
+                '2025-07-14 04\t$24.96 \t0.58%\n' +
+                '2025-07-14 05\t$25.94 \t0.93%\n' +
+                '2025-07-14 06\t$25.91 \t0.91%\n' +
+                '2025-07-14 07\t$26.58 \t0.85%\n' +
+                '2025-07-14 08\t$26.68 \t1.31%\n' +
+                '2025-07-14 09\t$26.30 \t1.30%\n' +
+                '2025-07-14 10\t$26.99 \t1.40%\n'
+        }
+    }
+
+
+</script>
+
+{{template "footer" .}}
+
+
+<style>
+    .chart-container {
+        background-color: #FFFFFF;
+        border-radius: 12px;
+        /*box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);*/
+        overflow: hidden;
+        width: 100%;
+        padding: 20px;
+        margin-top: 20px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(79, 195, 247, 0.2);
+        float: left;
+    }
+    #distributionChart {
+        width: 100%;
+        min-height: 600px;
+    }
+</style>

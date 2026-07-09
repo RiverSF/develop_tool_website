@@ -1,0 +1,103 @@
+
+#app{
+    font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+}
+
+.layout{
+    background: #ffffff;
+    position: relative;
+    border-radius: 0px;
+    overflow: hidden;
+}
+.layout-logo{
+    width: 150px;
+    height: 30px;
+    border-radius: 3px;
+    float: left;
+    position: relative;
+    top: 5px;
+    left: 40px;
+    line-height: 30px;
+    text-align: center;
+    font-size: larger;
+    font-weight: bolder;
+    cursor:pointer;
+}
+
+.layout-logo {
+    color:#ffffff;
+}
+
+.layout-logo img {
+    border-color: rgb(255, 255, 255);
+    top: 4px;
+    position: relative;
+}
+
+.layout-nav{
+    width: 250px;
+    margin: 0 auto;
+    margin-right: 20px;
+}
+.layout-footer-center{
+    text-align: center;
+}
+.layout .ivu-layout-header {
+    background: #006688;
+}
+.ivu-layout {
+    background-color: #ffffff;
+}
+.layout-topMiddleBottom .ivu-menu-light{
+    background:none;
+    color: #fff
+}
+
+.ivu-menu-horizontal {
+    height: 50px;
+    line-height: 50px;
+}
+
+.ivu-menu-horizontal .ivu-menu-submenu .ivu-select-dropdown .ivu-menu-item:hover {
+    background-color: #ffffff;
+    color: #009cd1;
+    font-weight: 400;
+}
+
+.ivu-menu-submenu.ivu-menu-item-active {
+    font-weight: 400;
+}
+
+body::-webkit-scrollbar { width: 0 !important }
+
+
+
+.ivu-menu-dark {
+    background: #006688;
+}
+
+.my-tool {
+    display: block;
+    position: fixed;
+    right: 80px;
+    top: 90px;
+    z-index: 10;
+    -webkit-box-shadow: 0 6px 16px 0 rgba(0,0,0,.06);
+    box-shadow: 0 6px 16px 0 rgba(0,0,0,.06);
+    color: #fff;
+}
+
+.ivu-input:focus {
+    border-color: #006688;
+    box-shadow: 0 0 0 2px rgba(45, 140, 240, .2);
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-left: 5px;
+    margin-bottom: 2px;
+}
+.card-title-icon {
+    color: #006688;
+}

@@ -1,0 +1,174 @@
+
+{{template "header" .}}
+
+<section v-show="!loadding">
+
+    <Tabs v-model="id" :animated="false" >
+        <Tab-Pane label="新增+" :name="'' + tempDspId">
+        </Tab-Pane>
+
+        <Tab-Pane :label="item.name" :name="'' + item.id" v-for="item in dspMap">
+        </Tab-Pane>
+    </Tabs>
+
+    <i-Form :label-width="120">
+        <Form-Item label="名称：">
+            <i-Input v-model="name" class="key"></i-Input>
+        </Form-Item>
+        <Form-Item label="唯一Key：">
+            <i-Input v-model="unique_key" class="key"></i-Input>
+            <i-button type="primary" style="margin-left: 10px" @click="save()">保存</i-button>
+        </Form-Item>
+        <Form-Item label="Api地址：">
+            <a v-html="adxApi"></a>
+        </Form-Item>
+        <Form-Item label="BidCn：">
+            <i-Input v-model="adm" type="textarea" :rows="44" style="width: 95%"></i-Input>
+        </Form-Item>
+    </i-Form>
+
+</section>
+
+<Spin :show="loadding" size="large"></Spin>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                dspMap:[],
+
+                id:"",
+                name:"",
+                unique_key:"",
+                adm:"",
+                adxApi:"",
+
+                loadding:true,
+                tempDspId:100000,
+
+                noticeListText:"",
+                noticeId:0,
+            }
+        },
+        watch:{
+            unique_key(v){
+                this.adxApi = this.local + "/adx/dsp/" + this.unique_key
+            },
+            id(v){
+                this.setSelectedDsp(v)
+            }
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "id":this.id
+                }
+            },
+            initShareData(data) {
+                this.id = data["id"]
+            },
+            save() {
+                let id = parseInt(this.id) == this.tempDspId ? 0 : parseInt(this.id)
+
+                var self = this
+                axios.post('/adx/adxDspSave', {
+                    id: id,
+                    name: this.name,
+                    unique_key: this.unique_key,
+                    adm: this.adm,
+                    is_cn: 2,
+                }).then(function (response) {
+                    let resp = response.data
+                    if (resp.status === 200) {
+                        self.$Notice.success({
+                            title: '提示',
+                            desc: '保存成功'
+                        });
+                        self.dspMap.forEach((item, idx) => {
+                            if (item.id == id) {
+                                self.dspMap[idx].name = self.name
+                            }
+                        })
+                        if (id === 0) {
+                            self.getDspList()
+                        }
+                    } else {
+                        self.$Notice.error({
+                            title: '提示',
+                            desc: resp.message
+                        });
+                    }
+                })
+            },
+            getDspList(){
+                var self = this
+                axios.post('/adx/adxGetDspList', {"is_cn":2}).then(function (response) {
+
+                    self.loadding = false
+
+                    let resp = response.data;
+                    let dspMap = []
+
+                    if (resp.length > 0) {
+                        let defaultId = 0
+                        resp.forEach((item, idx) => {
+                            if (defaultId == 0) {
+                                defaultId = item.id
+                            }
+                            dspMap[idx] = item
+                        })
+                        self.dspMap = dspMap
+                        self.id = defaultId+""
+                    }
+                })
+            },
+            getDspAdm(){
+                var self = this
+                axios.get('/adx/adxGetDspAdm', {
+                    params: {
+                        id: this.id
+                    }
+                }).then(function (response) {
+                    self.adm = response.data
+                })
+            },
+            setSelectedDsp(id){
+
+                if (parseInt(id) === this.tempDspId){
+                    this.name = ""
+                    this.unique_key = ""
+                    this.adm = ""
+                    this.noticeListText = ""
+                    this.noticeId = 0
+                    return
+                }
+
+                var self = this
+                for (i = 0; i < this.dspMap.length; i ++) {
+
+                    if (this.dspMap[i].id === parseInt(id)) {
+                        self.name = this.dspMap[i].name
+                        self.unique_key = this.dspMap[i].unique_key
+                        self.adm = this.dspMap[i].adm
+
+                        self.getDspAdm(id)
+                    }
+                }
+            }
+        },
+        mounted(){
+            this.getDspList()
+        }
+    }
+</script>
+
+{{template "footer" .}}
+
+<style>
+    .key {
+        width: 200px;
+        /*margin-left: 10px;*/
+        /*margin-top: 10px;*/
+    }
+</style>

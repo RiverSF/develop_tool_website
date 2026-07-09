@@ -1,0 +1,75 @@
+
+{{template "header" .}}
+
+<section>
+    <div style="width: 49%; float: left">
+        <i-Input v-model="content1" type="textarea" :rows="globalTextareaRowsWithButton"></i-Input>
+
+        <div style="float: left; margin-top: 10px;width: 600px">
+            <i-button type="primary" style="" @click="conv()"> ADM 格式化 >></i-button>
+        </div>
+    </div>
+
+    <div style="width: 49%; float: left;margin-left: 15px">
+        <i-Input v-model="content2" type="textarea" :rows="globalTextareaRowsWithButton"></i-Input>
+    </div>
+</section>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                content1: "",
+                content2: ""
+            }
+        },
+        watch: {
+            content1(){
+                this.conv()
+            },
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content1":this.content1,
+                    "content2":this.content2,
+                }
+            },
+            initShareData(data) {
+                this.content1 = data["content1"]
+                this.content2 = data["content2"]
+            },
+            conv() {
+                ct = this.content1
+
+                ct = ct.replaceAll("\\r\\n", "\n")
+
+                ct = ct.replaceAll("\\\\n", "__river.site__")
+                ct = ct.replaceAll("\\n", "\n")
+                ct = ct.replaceAll("__river.site__", "\\\\n")
+
+                ct = ct.replaceAll("\\\\\/", "__river.site__")
+                ct = ct.replaceAll("\\\/", "\/")
+                ct = ct.replaceAll("__river.site__", "\\\\\/")
+
+                ct = ct.replaceAll("\\\\", "\\")
+                ct = ct.replaceAll("\\\"", "\"")
+
+
+                ct = ct.replaceAll("\\\\u003c", "<")
+                ct = ct.replaceAll("\\\\u003e", ">")
+                ct = ct.replaceAll("\\\\u003d", "=")
+                ct = ct.replaceAll("\\\\u0026", "&")
+                // ct = ct.replaceAll("&amp;", " ")
+
+                this.content2 = ct
+            },
+        },
+        mounted(){
+
+        }
+    }
+</script>
+
+{{template "footer" .}}

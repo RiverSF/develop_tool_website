@@ -1,0 +1,140 @@
+
+{{template "header" .}}
+
+<section style="padding: 12px;">
+    <div>
+
+        <Card class="home-card" :bordered="false" :dis-hover="true" >
+            <template #title>
+                <Icon type="ios-star-outline" size="20" class="card-title-icon"></Icon>
+                <span class="card-title">标星</span>
+            </template>
+            <p class="card-child glass" v-for="item2 in collectList">
+                <Icon type="ios-star" style="color:#006688" class="card-child-star" @click="collectHome(item2.id)"></Icon>
+                <a :href="item2.url">
+                    <span v-html="item2.name" class="card-child-name"></span>
+                </a>
+            </p>
+        </Card>
+
+        <Card class="home-card" :bordered="false" :dis-hover="true" v-for="(item, idx) in menuList">
+            <template #title>
+                <Icon :type="item.icon" size="20" class="card-title-icon"></Icon>
+                <span class="card-title" v-html="item.title"></span>
+            </template>
+            <p class="card-child glass" v-for="item2 in item.list" v-show="collectMenuIdArr.indexOf(item2.id+'') == -1">
+                <Icon type="ios-star-outline" class="card-child-star" @click="collectHome(item2.id)"></Icon>
+                <a :href="item2.url">
+                    <span v-html="item2.name" class="card-child-name"></span>
+                </a>
+            </p>
+        </Card>
+    </div>
+</section>
+
+<script type="text/javascript" src="./assets/menu.js?v=0801"></script>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                menuList: menuList,
+                collectList: [],
+                collectMenuIdArr: []
+            }
+        },
+        watch: {
+
+        },
+        methods: {
+            collectHome(t) {
+                collectMenuIdArr = this.getCollectMenuIdArr()
+                idx = collectMenuIdArr.indexOf(t+"")
+                if (idx > -1) {
+                    collectMenuIdArr.splice(idx, 1)
+                } else {
+                    collectMenuIdArr.push(t+"")
+                }
+                collectMenuIds = collectMenuIdArr.join(",")
+                $.cookie('CollectMenuIds', collectMenuIds);
+                this.updateCollectList()
+            },
+            updateCollectList() {
+                this.collectMenuIdArr = this.getCollectMenuIdArr()
+                this.collectList = []
+                this.menuList.forEach((item,idx) => {
+                    item.list.forEach((item2,idx2) => {
+                        if (this.collectMenuIdArr.indexOf(item2.id+"") > -1) {
+                            this.collectList.push(item2)
+                        }
+                    })
+                })
+            },
+            getCollectMenuIdArr() {
+                collectMenuIds = $.cookie('CollectMenuIds')
+                if (collectMenuIds === undefined) {
+                    collectMenuIds = ""
+                }
+                return collectMenuIds.split(",")
+            }
+        },
+        mounted(){
+            this.updateCollectList()
+        }
+    }
+</script>
+
+{{template "footer" .}}
+
+<style>
+    .home-card {
+        width: 80%;
+        margin-left: 10%;
+    }
+
+    .home-card + .home-card {
+        margin-top: 20px;
+    }
+
+    a {
+        color: #515a6e;
+    }
+
+    .card-child {
+        width: 200px;
+        margin-top: 4px;
+        margin-left: 10px;
+        display: inline-flex;
+        align-items: center;
+        vertical-align: top;
+        padding: 6px;
+        border-radius: 4px;
+    }
+
+    .ivu-card-body {
+        display: flex;
+        flex-wrap: wrap;
+        align-content: flex-start;
+    }
+
+    .card-child-name {
+        margin-left: 5px;
+    }
+
+    .card-child-name:hover {
+        font-weight: 400;
+        color: #515a6e;
+    }
+
+    .card-child-star {
+        font-size: 16px;
+        margin-top: 2px;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .card-child-star:hover{
+        color: #006688;
+    }
+</style>

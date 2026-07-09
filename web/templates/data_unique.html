@@ -1,0 +1,102 @@
+
+{{template "header" .}}
+
+<section>
+    <div style="width: 49%; float: left">
+        <i-Input v-model="content1" type="textarea" :rows="globalTextareaRowsWithButton"></i-Input>
+
+        <div style="float: left; margin-top: 10px;width: 600px">
+            <i-button type="primary" style="" @click="unique()"> 去重排序 >></i-button>
+            <Checkbox v-model="lower" style="margin-left: 10px">不区分大小写</Checkbox>
+        </div>
+    </div>
+
+    <div style="width: 49%; float: left;margin-left: 15px">
+        <i-Input v-model="content2" type="textarea" :rows="globalTextareaRowsWithButton"></i-Input>
+    </div>
+</section>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                content1: "",
+                content2: "",
+                lower: false
+            }
+        },
+        watch: {
+
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content1":this.content1,
+                    "content2":this.content2,
+                    "lower":this.lower,
+                }
+            },
+            initShareData(data) {
+                this.content1 = data["content1"]
+                this.content2 = data["content2"]
+                this.lower = data["lower"]
+            },
+            unique() {
+                // axios.post('/data-unique-exec', {
+                //     content: this.content1,
+                // }).then((response) => {
+                //     if (response.status === 200) {
+                //         let resp = response.data
+                //         this.content2 = resp.result
+                //     } else {
+                //         console.log("失败");
+                //     }
+                // }).catch((error) => {
+                //     console.log(error);
+                // })
+                var c = this.content1
+                if (this.lower) {
+                    c = c.toLowerCase()
+                }
+                this.content2 = this.simulateLinuxCommands(c)
+            },
+            simulateLinuxCommands(input) {
+                // 分割输入为行数组
+                const lines = input.split('\n');
+
+                // 第一步：排序（模拟 sort）
+                lines.sort();
+
+                // 第二步：统计连续重复行（模拟 uniq -c）
+                const counts = [];
+                if (lines.length === 0) return '';
+                let current = lines[0];
+                let count = 1;
+                for (let i = 1; i < lines.length; i++) {
+                    if (lines[i] === current) {
+                        count++;
+                    } else {
+                        counts.push({ count, line: current });
+                        current = lines[i];
+                        count = 1;
+                    }
+                }
+                counts.push({ count, line: current }); // 添加最后一行
+
+                // 第三步：按计数降序、行内容逆序排序（模拟 sort -rn）
+                counts.sort((a, b) =>
+                    b.count - a.count || b.line.localeCompare(a.line)
+                );
+
+                // 生成最终格式
+                return counts.map(entry => `${entry.count} ${entry.line}`).join('\n');
+            }
+        },
+        mounted(){
+
+        }
+    }
+</script>
+
+{{template "footer" .}}

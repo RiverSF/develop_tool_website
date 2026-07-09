@@ -1,0 +1,111 @@
+
+{{template "header" .}}
+
+<section>
+    <div style="width: 20%;padding-left: 100px;padding-top: 10px;float: left">
+        <Card :bordered="false" :dis-hover="true">
+            <template #title>
+                <Icon type="ios-information-circle-outline" size="20" class="card-title-icon"></Icon>
+                <span class="card-title">快捷运算符：</span>
+            </template>
+            <i-button type="primary" style="width:90px" ghost @click="clear()">清空</i-button> <br><br>
+            <i-button type="primary" style="width:90px" ghost @click="appendOp('+')">加：+</i-button> <br><br>
+            <i-button type="primary" style="width:90px" ghost @click="appendOp('-')">减：-</i-button> <br><br>
+            <i-button type="primary" style="width:90px" ghost @click="appendOp('*')">乘：*&nbsp;x</i-button> <br><br>
+            <i-button type="primary" style="width:90px" ghost @click="appendOp('/')">除：/&nbsp;÷</i-button> <br><br>
+            <i-button type="primary" style="width:90px" ghost @click="appendOp('/60/60')">/60/60</i-button> <br><br>
+            <i-button type="primary" style="width:90px" ghost @click="appendOp('/24/60/60')">/24/60/60</i-button> <br><br>
+        </Card>
+    </div>
+
+    <div style="width: 50%; float: left;margin-left: 15px">
+        <Card :bordered="false" :dis-hover="true">
+            <template #title>
+                <Icon type="ios-calculator-outline" size="20" class="card-title-icon"></Icon>
+                <span class="card-title">计算公式</span>
+            </template>
+            <i-Input v-model="command" type="textarea" :rows="10" id="command-text"></i-Input>
+        </Card>
+
+
+        <Card :bordered="false" :dis-hover="true">
+            <template #title>
+                <Icon type="ios-calendar-outline" size="20" class="card-title-icon"></Icon>
+                <span class="card-title">计算结果</span>
+            </template>
+            <i-Input v-model="result" type="textarea" :rows="globalTextareaRowsNoneButton - 20"></i-Input>
+        </Card>
+
+    </div>
+
+</section>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                command:"",
+                result:"",
+                split:0.5
+            }
+        },
+        watch:{
+            command(){
+                this.calc()
+            }
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "command":this.command,
+                    "result":this.result,
+                }
+            },
+            initShareData(data) {
+                this.command = data["command"]
+                this.result = data["result"]
+            },
+            clear(){
+                this.command = ""
+                this.result = ""
+            },
+            appendOp(op){
+                this.command += op
+                var textareaAll = $('#command-text').find("textarea")
+                if (textareaAll.length > 0) {
+                    textareaAll[0].select()
+                }
+            },
+            calc() {
+                var command = this.command.replaceAll(",", "")
+                if (command === "") {
+                    return
+                }
+                var self = this
+                axios.post('/data-calc', {
+                    command: command,
+                }).then(function (response) {
+                    if (response.status === 200) {
+                        let resp = response.data
+                        self.result = resp.result
+                    } else {
+                        console.log("失败");
+                    }
+                }).catch((error) => {
+                    console.log(error);
+                })
+            },
+        },
+        mounted() {
+        }
+    }
+</script>
+
+{{template "footer" .}}
+
+<style>
+    .ivu-card-head {
+        border-bottom: 0px solid #e8eaec;
+    }
+</style>

@@ -1,0 +1,121 @@
+
+{{template "header" .}}
+
+<section >
+    <div style="margin-left: 50px">
+        <br>
+
+        <Icon type="ios-clock-outline" size="48" style="width: auto; margin-left: 20px;color:#006688"></Icon>
+        <b style="margin-left: 16px;font-size: 15px">Unix时间戳: </b>
+        <span v-html="now" style="margin-left: 5px;"></span>
+
+         <br><br><br>
+
+        <Divider orientation="left" size="small"  style="width: 50%">时间戳转换</Divider><br>
+
+        <div>
+            <i-Input v-model="time1" style="width: auto; margin-left: 10px;" on-change="exchange1"></i-Input>
+            <span v-html="date1" style="margin-left: 10px;"></span>
+
+            <i-Select v-model="timezone" @on-change="exchange1" style="margin-left: 20px;width:200px">
+                <i-Option v-for="item in timezoneList" :value="item.value" :key="item.value">
+                    <span v-html="item.label"></span>
+                </i-Option>
+            </i-Select>
+        </div> <br><br><br>
+
+        <Divider orientation="left" size="small">日期转换</Divider><br>
+
+        <div>
+            <i-Input v-model="date2" style="width: auto; margin-left: 10px;"></i-Input>
+            <span v-html="time2" style="margin-left: 10px;"></span>
+
+            <i-Select v-model="timezone2" @on-change="exchange2" style="margin-left: 75px;width:200px">
+                <i-Option v-for="item in timezoneList" :value="item.value" :key="item.value">
+                    <span v-html="item.label"></span>
+                </i-Option>
+            </i-Select>
+        </div> <br>
+    </div>
+</section>
+
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                now:0,
+                time1: "",
+                date1: "",
+                timezone: '8',
+                time2: "",
+                date2: "",
+                timezone2: '8',
+                timezoneList:[
+                    {
+                        value: '8',
+                        label: 'UTC+8 中国标准时间'
+                    },
+                    {
+                        value: '0',
+                        label: 'UTC+0 格林威治标准时间'
+                    },
+                    {
+                        value: '-8',
+                        label: 'UTC-8 太平洋标准时间'
+                    },
+                    {
+                        value: '-5',
+                        label: 'UTC-5 美国东部标准时区'
+                    },
+                ]
+            }
+        },
+        watch:{
+            time1(){
+                this.exchange1()
+            },
+            date2(){
+                this.exchange2()
+            },
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "time1":this.time1,
+                    "date2":this.date2,
+                    "timezone":this.timezone,
+                    "timezone2":this.timezone2,
+                }
+            },
+            initShareData(data) {
+                this.time1 = data["time1"]
+                this.date2 = data["date2"]
+                this.timezone = data["timezone"]
+                this.timezone2 = data["timezone2"]
+            },
+            exchange1(){
+                this.date1 = this.exchangeT2D(this.time1, this.timezone)
+            },
+            exchange2(){
+                this.time2 = this.exchangeD2T(this.date2, this.timezone2)
+            },
+            tt(){
+                this.now = Date.parse(new Date()) / 1000;
+                setTimeout(this.tt, 1000)
+            },
+        },
+        mounted(){
+            this.now = Date.parse(new Date()) / 1000;
+
+            this.time1 = this.now
+
+            this.date2 = this.exchangeT2D(this.time1, this.timezone2)
+
+            setTimeout(this.tt, 1000)
+        }
+    }
+</script>
+
+{{template "footer" .}}

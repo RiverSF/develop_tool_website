@@ -1,0 +1,214 @@
+
+{{template "header" .}}
+
+<section style="padding:20px 20px 20px 100px; width: 80%">
+    <Tabs v-model="opType">
+        <Tab-Pane :label="item.name" :name="'' + item.opType" :icon="item.icon" v-for="item in opList">
+        </Tab-Pane>
+    </Tabs>
+
+    <List :header="content.name" v-for="content in contentList" style="" v-show="content.list.length > 0 && opType !== '0'">
+        <i-Table :columns="columns" :data="content.list" :show-header="false" :disabled-hover="true">
+            <template #name="{ row }">
+                <a :href="row.shareUrl" target="_blank">
+                    <span v-html="row.name"></span>
+                </a>
+            </template>
+            <template #action="{ row }">
+                <Poptip
+                        confirm
+                        title="确认删除?"
+                        @on-ok="deleteShare(row.id)"
+                        placement="right"
+                >
+                    <i-Button type="error" ghost size="small">Delete</i-Button>
+                </Poptip>
+
+            </template>
+        </i-Table>
+    </List>
+
+    <i-Form label-position="right" :label-width="120" v-show="opType === '0'">
+        <Form-Item label="用户名（标识）：">
+            <span>********</span>
+            <Icon type="ios-create-outline" size="16" style="cursor: pointer;margin-left: 10px" @click="userModal = true"></Icon>
+        </Form-Item>
+
+        <Form-Item label="设备列表：">
+            <div v-html="item" v-for="item in userAgents"></div>
+        </Form-Item>
+    </i-Form>
+
+    <Modal v-model="userModal" title="用户名" @on-ok="saveUserName" @on-cancel=""  :width="700">
+        <i-Form label-position="right" :label-width="150" >
+            <Form-Item label="用户名（标识）：">
+                <i-Input v-model="userName" style="width:300px"></i-Input>
+            </Form-Item>
+        </i-Form>
+    </Modal>
+</section>
+
+<script type="text/javascript" src="./assets/menu.js"></script>
+
+<script>
+
+    var render = {
+        data() {
+            return {
+                opList: [
+                    {"opType": 1, "name": "我的收藏", "icon": "ios-star"},
+                    {"opType": 2, "name": "我的分享", "icon": "ios-share-alt"},
+                    {"opType": 3, "name": "我的下载", "icon": "ios-download"},
+                    {"opType": 0, "name": "个人中心", "icon": "ios-person"},
+                ],
+                opType: '1',
+
+                menuList: menuList,
+                contentList: [],
+                shareList: [],
+
+                userModal: false,
+
+                columns:[
+                    {
+                        title: '名称',
+                        slot: 'name',
+                        width: 450
+                    },
+                    {
+                        title: '创建时间',
+                        key: 'updated_date',
+                        width: 200
+                    },
+                    {
+                        title: 'Action',
+                        slot: 'action',
+                        width: 200,
+                    }
+                ],
+            }
+        },
+        watch:{
+            opType(){
+                this.getShareList()
+            }
+        },
+        methods: {
+            getContentList(){
+                for(var i = 0; i < this.menuList.length; i ++) {
+                    for (var j = 0; j < this.menuList[i].list.length; j ++) {
+
+                        var content = {
+                            url: this.menuList[i].list[j].url,
+                            name: this.menuList[i].list[j].name,
+                            list: []
+                        }
+
+                        if (this.shareList[content.url] !== undefined) {
+                            content.list = this.shareList[content.url]
+                            for (var k = 0; k < content.list.length; k ++ ) {
+                                content.list[k].shareUrl = this.local + content.list[k].path + "?token=" + content.list[k].token + "&name=" + content.list[k].name
+                            }
+                        }
+
+                        // console.log(content.url, this.shareList[content.url])
+                        this.contentList.push(content)
+                    }
+                }
+            },
+            getShareList() {
+                let opType = parseInt(this.opType)
+                if (opType === 0) {
+                    return
+                }
+                this.contentList = []
+                axios.post('/share/list', {
+                    opType: parseInt(this.opType),
+                    uuid: this.uuid,
+                }).then((response) => {
+                    let resp = response.data
+                    if (resp.status === 200) {
+                        this.shareList = resp.data
+                        this.getContentList()
+                    } else {
+                        this.$Notice.error({
+                            title: '提示',
+                            desc: resp.message
+                        });
+                    }
+                })
+            },
+            deleteShare(id) {
+                this.contentList = []
+                axios.post('/share/delete', {
+                    id: id,
+                    uuid: this.uuid,
+                }).then((response) => {
+                    let resp = response.data
+                    if (resp.status === 200) {
+                        this.getShareList()
+                    } else {
+                        this.$Notice.error({
+                            title: '提示',
+                            desc: resp.message
+                        });
+                    }
+                })
+            },
+            getUserIdSuccessCallBack() {
+                if (this.userId === 0) {
+                    this.userModal = true
+                    return
+                }
+                this.getShareList()
+            },
+            getFirstLetterOrChinese(str) {
+                // 遍历字符串中的每个字符
+                for (let i = 0; i < str.length; i++) {
+                    const char = str[i];
+                    const charCode = char.charCodeAt(0);
+
+                    // 如果是英文字母（A-Z 或 a-z）
+                    if ((charCode >= 65 && charCode <= 90) ||
+                        (charCode >= 97 && charCode <= 122)) {
+                        return char.toUpperCase(); // 返回大写形式
+                    }
+                    // 如果是中文字符（Unicode 范围：4E00-9FFF）
+                    else if (charCode >= 0x4E00 && charCode <= 0x9FFF) {
+                        return char; // 直接返回中文字符
+                    }
+                }
+
+                return ''; // 没有找到符合条件的字符
+            }
+        },
+        mounted() {}
+    }
+</script>
+
+{{template "footer" .}}
+
+<style>
+    .ivu-list-header{
+        font-weight: 600;
+        font-size: 16px;
+
+    }
+    .ivu-list-container{
+        padding: 12px;
+    }
+    .ivu-list-item {
+        border-bottom: 0px solid #e8ea !important;
+    }
+
+    .ivu-table:before {
+        height: 0px;
+    }
+    .ivu-table td, .ivu-table th {
+        border: none;
+    }
+
+    .ivu-table-wrapper {
+         overflow: unset;
+    }
+</style>
