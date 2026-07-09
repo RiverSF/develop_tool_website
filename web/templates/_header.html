@@ -19,8 +19,8 @@
     <meta name="google-adsense-account" content="ca-pub-9695744736555957">
     <link rel="shortcut icon" href="./assets/img/logo4.svg"/>
     <link rel="stylesheet" type="text/css" href="./assets/vue/viewuiplus-dark.css?v=0311">
-    <link rel="stylesheet" type="text/css" href="./assets/my2.css?v=0709">
-    <link rel="stylesheet" type="text/css" href="./assets/glass.css?v=0709">
+    <link rel="stylesheet" type="text/css" href="./assets/my2.css?v=0709c">
+    <link rel="stylesheet" type="text/css" href="./assets/glass.css?v=0709c">
     <script type="text/javascript" src="./assets/vue/vue.global.js"></script>
     <script type="text/javascript" src="./assets/vue/viewuiplus.min.js"></script>
     <script type="text/javascript" src="./assets/vue/axios.min.js"></script>
@@ -44,89 +44,89 @@
 <div id="app">
     <div class="layout">
         <Layout>
-                <div class="layout-logo" @click="logoClick">
-                    <img src="./assets/img/river_logo_1920x1080.png" alt="River">
-                </div>
+                <header class="app-header">
+                    <div class="layout-logo" @click="logoClick">
+                        <img src="./assets/img/river_logo_1920x1080.png" alt="River">
+                    </div>
 
-                <div class="my-share">
+                    <div class="my-share">
+                        <nav>
+                            <ul class="nav-links">
+                                <li>
+                                    <a href="/">首页</a>
+                                </li>
 
-                    <nav class="">
-                        <ul class="nav-links">
-                            <li>
-                                <a href="/">首页</a>
-                            </li>
+                                <li>
+                                    <a href="javascript:void(0)">
+                                        格式转化<Icon type="ios-arrow-down"></Icon>
+                                    </a>
+                                    <ul class="dropdown">
+                                        <li><a href="/timestamp">时间戳转换</a></li>
+                                        <li><a href="/json">Json 格式化</a></li>
+                                        <li><a href="/html">HTML 格式化</a></li>
+                                        <li><a href="/md5">Md5 加密</a></li>
+                                        <li><a href="/url">URL 解码</a></li>
+                                        <li><a href="/base64">Base64 解码</a></li>
+                                        <li><a href="/utf8">UTF-8 解码</a></li>
+                                        <li><a href="/unicode">Unicode 解码</a></li>
+                                    </ul>
+                                </li>
 
-                            <li>
-                                <a href="javascript:void(0)">
-                                    格式转化<Icon type="ios-arrow-down"></Icon>
-                                </a>
-                                <ul class="dropdown glass">
-                                    <li><a href="/timestamp">时间戳转换</a></li>
-                                    <li><a href="/json">Json 格式化</a></li>
-                                    <li><a href="/html">HTML 格式化</a></li>
-                                    <li><a href="/md5">Md5 加密</a></li>
-                                    <li><a href="/url">URL 解码</a></li>
-                                    <li><a href="/base64">Base64 解码</a></li>
-                                    <li><a href="/utf8">UTF-8 解码</a></li>
-                                    <li><a href="/unicode">Unicode 解码</a></li>
-                                </ul>
-                            </li>
+                                <li>
+                                    <a href="javascript:void(0)">
+                                        数据处理<Icon type="ios-arrow-down"></Icon>
+                                    </a>
+                                    <ul class="dropdown">
+                                        <li><a href="/data-editor">文本编辑器</a></li>
+                                        <li><a href="/data-calculator">计算器</a></li>
+                                        <li><a href="/data-diff">数据对比</a></li>
+                                        <li><a href="/data-unique">数据去重排序</a></li>
+                                        <li><a href="/data-filter">数据过滤</a></li>
+                                        <li><a href="/data-interval">数据分布</a></li>
+                                        <li><a href="/data-line">数据图表</a></li>
+                                        <li><a href="/data-combine">数据合并拆分</a></li>
+                                        <li><a href="/markdown">Markdown</a></li>
+                                        <li><a href="/chart-sankey">桑基图</a></li>
+                                    </ul>
+                                </li>
 
-                            <li>
-                                <a href="javascript:void(0)">
-                                    数据处理<Icon type="ios-arrow-down"></Icon>
-                                </a>
-                                <ul class="dropdown glass">
-                                    <li><a href="/data-editor">文本编辑器</a></li>
-                                    <li><a href="/data-calculator">计算器</a></li>
-                                    <li><a href="/data-diff">数据对比</a></li>
-                                    <li><a href="/data-unique">数据去重排序</a></li>
-                                    <li><a href="/data-filter">数据过滤</a></li>
-                                    <li><a href="/data-interval">数据分布</a></li>
-                                    <li><a href="/data-line">数据图表</a></li>
-                                    <li><a href="/data-combine">数据合并拆分</a></li>
-                                    <li><a href="/markdown">Markdown</a></li>
-                                    <li><a href="/chart-sankey">桑基图</a></li>
-                                </ul>
-                            </li>
+                                <li>
+                                    <a href="javascript:void(0)">
+                                        TPX<Icon type="ios-arrow-down"></Icon>
+                                    </a>
+                                    <ul class="dropdown">
+                                        <li><a href="/aes">AES 传输加解密</a></li>
+                                        <li><a href="/price">AES 价格加解密</a></li>
+                                        <li><a href="/adx">TPX 海外</a></li>
+                                        <li><a href="/adx/cn">TPX 国内</a></li>
+                                        <li><a href="/sid">TPX SellerId</a></li>
+                                        <li><a href="/gepip">GeoIp 解析</a></li>
+                                    </ul>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0)">
+                                        收藏/分享<Icon type="ios-arrow-down"></Icon>
+                                    </a>
+                                    <ul class="dropdown">
+                                        <li @click="collect"><a href="javascript:void(0)"><Icon type="ios-star-outline" size="18"></Icon>收藏</a></li>
+                                        <li @click="share"><a href="javascript:void(0)"><Icon type="ios-share-alt-outline" size="18"></Icon>分享</a></li>
+                                        <li @click="download"><a href="javascript:void(0)"><Icon type="ios-download-outline" size="18"></Icon>下载</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
 
-                            <li>
-                                <a href="javascript:void(0)">
-                                    TPX<Icon type="ios-arrow-down"></Icon>
-                                </a>
-                                <ul class="dropdown glass">
-                                    <li><a href="/aes">AES 传输加解密</a></li>
-                                    <li><a href="/price">AES 价格加解密</a></li>
-                                    <li><a href="/adx">TPX 海外</a></li>
-                                    <li><a href="/adx/cn">TPX 国内</a></li>
-                                    <li><a href="/sid">TPX SellerId</a></li>
-                                    <li><a href="/gepip">GeoIp 解析</a></li>
-                                </ul>
-                            </li>
-                            <li>
-                                <a href="javascript:void(0)">
-                                    收藏/分享<Icon type="ios-arrow-down"></Icon>
-                                </a>
-                                <ul class="dropdown glass">
-                                    <li @click="collect"><a href="javascript:void(0)"><Icon type="ios-star-outline" size="18"></Icon>收藏</a></li>
-                                    <li @click="share"><a href="javascript:void(0)"><Icon type="ios-share-alt-outline" size="18"></Icon>分享</a></li>
-                                    <li @click="download"><a href="javascript:void(0)"><Icon type="ios-download-outline" size="18"></Icon>下载</a></li>
-                                </ul>
-                            </li>
-                        </ul>
-                    </nav>
-                </div>
+                    <div class="my-share-user">
+                        <a href="/user">
+                            <div class="avatar-wrapper">
+                                <img src="./assets/img/avatar.png" class="avatar-image" alt="user">
+                            </div>
+                        </a>
+                    </div>
+                </header>
 
-                <div class="my-share-user glass-avatar">
-                    <a href="/user">
-                        <div class="avatar-wrapper">
-                            <div class="avatar-border"></div>
-                            <img src="./assets/img/avatar.png" class="avatar-image">
-                        </div>
-                    </a>
-                </div>
-
-            <i-Content style="padding: 24px;margin-top: 42px">
+            <i-Content class="app-content">
                 <div :style="{'min-height': contentHeight + 'px'}">
 
 {{end}}
