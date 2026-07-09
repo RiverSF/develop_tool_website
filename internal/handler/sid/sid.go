@@ -43,7 +43,7 @@ func GetSid(c *gin.Context) {
 		if err != nil {
 			content2 += fmt.Sprintf("%s       [error]%s\n", record, err.Error())
 		} else {
-			content2 += fmt.Sprintf("%s       tradplusad.com,%s,DIRECT\n", record, sid)
+			content2 += fmt.Sprintf("%s       river.com,%s,DIRECT\n", record, sid)
 		}
 	}
 
