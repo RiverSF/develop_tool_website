@@ -115,7 +115,7 @@ const menuList = [
     },
     {
         icon: 'ios-infinite-outline',
-        title: 'TPX',
+        title: 'ADX',
         list: [
             {
                 id: 301,
@@ -131,21 +131,27 @@ const menuList = [
             },
             {
                 id: 303,
-                name: 'TPX 海外',
+                name: 'ADX 海外',
                 url: '/adx',
                 rate: 0.4
             },
             {
                 id: 304,
-                name: 'TPX 国内',
+                name: 'ADX 国内',
                 url: '/adx/cn',
                 rate: 0.5
             },
             {
                 id: 306,
-                name: 'TPX SellerId',
+                name: 'ADX SellerId',
                 url: '/sid',
                 rate: 0.5
+            },
+            {
+                id: 307,
+                name: 'Bundle 信息提取',
+                url: '/bundle',
+                rate: 0.1
             },
             {
                 id: 305,

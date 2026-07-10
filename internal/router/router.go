@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"develop_tools/internal/handler/adx"
+	"develop_tools/internal/handler/bundle"
 	"develop_tools/internal/handler/conversion"
 	"develop_tools/internal/handler/data"
 	"develop_tools/internal/handler/dev"
@@ -57,6 +58,8 @@ func initRouter(r *gin.Engine) {
 		root.GET("/sid", sid.Sid)
 		root.POST("/sid/get", sid.GetSid)
 
+		root.GET("/bundle", bundle.BundleIndex)
+
 		root.GET("/gepip", conversion.GeoIp)
 		root.GET("/chart-sankey", conversion.ChartSankey)
 		root.GET("/timeline", conversion.Timeline)
@@ -80,6 +83,8 @@ func initRouter(r *gin.Engine) {
 
 		adxGroup.POST("/adxDspSave", adx.AdxDspSave)
 		adxGroup.GET("/adxGetDspNotice", adx.AdxGetDspNotice)
+
+		adxGroup.POST("/bundle/extract", bundle.Extract)
 
 		adxGroup.POST("/cn/:uniqueKey", adx.AdxBidCn)
 		adxGroup.GET("/:uniqueKey/:noticeType", adx.AdxSaveDspNotice)

@@ -1,0 +1,533 @@
+{{template "header" .}}
+
+<section>
+    <div style="width: 49%; float: left">
+        <div style="margin-bottom: 6px; color: #515a6e; font-weight: 500">
+            Bundle 列表
+            <span style="font-weight: 400; color: #808695; margin-left: 8px">每行一个，也支持逗号分隔；纯数字为 Apple，包名如 com.xxx 为 Google</span>
+        </div>
+        <i-Input v-model="bundles" type="textarea" :rows="12"
+                 placeholder="示例：&#10;com.whatsapp&#10;310633997&#10;https://apps.apple.com/app/id310633997&#10;https://play.google.com/store/apps/details?id=com.whatsapp"></i-Input>
+
+        <div style="margin-top: 12px; margin-bottom: 6px; color: #515a6e; font-weight: 500">
+            显示字段
+            <span style="font-weight: 400; color: #808695; margin-left: 8px">可选；留空则全部显示（仅「提取应用商店信息」生效）</span>
+            <Tooltip max-width="380" placement="top">
+                <Icon type="ios-help-circle-outline" style="margin-left: 4px; cursor: help; color: #2d8cf0; vertical-align: -2px"></Icon>
+                <template #content>
+                    <div style="line-height: 1.6">
+                        <div>字段作用于 app；勾选 developer 可额外输出开发者信息。</div>
+                        <div>Apple 与 Google 字段不可交叉勾选；也可在输入框中手动填写，每行一个。</div>
+                    </div>
+                </template>
+            </Tooltip>
+            <a href="javascript:void(0)" style="margin-left: 10px; font-weight: 400" @click="openFieldModal">选择字段</a>
+            <a href="javascript:void(0)" v-if="fields" style="margin-left: 8px; font-weight: 400; color: #808695" @click="clearFields">清空</a>
+        </div>
+        <i-Input v-model="fields" type="textarea" :rows="4"
+                 placeholder="Apple 示例：trackName / bundleId / artistName&#10;Google 示例：name / id / score / developer"></i-Input>
+
+        <div style="margin-top: 10px">
+            <i-button type="primary" :loading="loading" :disabled="statusLoading" @click="extract">提取应用商店信息 >></i-button>
+            <i-button type="primary" ghost style="margin-left: 10px" :loading="statusLoading" :disabled="loading" @click="checkStatus">上下架状态 >></i-button>
+        </div>
+    </div>
+
+    <div style="width: 49%; float: left; margin-left: 15px">
+        <div style="margin-bottom: 6px; color: #515a6e; font-weight: 500">
+            提取结果
+            <i-button type="primary" ghost size="small" style="margin-left: 10px" :disabled="!canCopy" @click="copyResult">一键复制</i-button>
+        </div>
+
+        <i-Input v-if="resultMode !== 'status'" v-model="resultText" type="textarea" :rows="20" placeholder="结果将显示在这里"></i-Input>
+
+        <div v-else class="bundle-status-box">
+            <table class="bundle-status-table" v-if="statusRows.length">
+                <colgroup>
+                    <col style="width:90%">
+                    <col style="width:10%">
+                </colgroup>
+                <thead>
+                <tr>
+                    <th style="text-align:left">Bundle</th>
+                    <th style="text-align:right">状态</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr v-for="(row, idx) in statusRows" :key="idx">
+                    <td style="text-align:left; word-break:break-all" v-text="row.name"></td>
+                    <td style="text-align:right; white-space:nowrap" :style="{color: row.status === '上架' ? '#19be6b' : '#ed4014', fontWeight: 600}" v-text="row.status"></td>
+                </tr>
+                </tbody>
+            </table>
+            <div v-else style="color:#808695; padding:28px 20px; text-align:center">暂无结果</div>
+        </div>
+    </div>
+    <div style="clear:both"></div>
+
+    <Modal v-model="fieldModal" title="选择显示字段" :width="560" @on-ok="applyFieldModal" @on-cancel="fieldModal = false">
+        <div style="margin-bottom: 10px; color: #808695; line-height: 1.6">
+            通过 Tab 切换平台字段；Apple 与 Google 不可交叉选择。确定后写入输入框，不选表示输出全部字段。
+        </div>
+        <Tabs v-model="fieldTab" :animated="false">
+            <Tab-Pane label="Apple" name="apple">
+                <div class="bundle-field-tab-toolbar">
+                    <a href="javascript:void(0)" @click="selectAllAppleFields">全选</a>
+                    <span style="margin: 0 6px; color: #dcdee2">|</span>
+                    <a href="javascript:void(0)" @click="clearAppleFields">清空</a>
+                    <span v-if="googleFieldSelected.length > 0" style="margin-left: 10px; color: #ed4014; font-size: 12px">
+                        已选 Google 字段，勾选 Apple 将清空 Google 选择
+                    </span>
+                </div>
+                <div class="bundle-field-tab-body">
+                    <Checkbox-Group v-model="appleFieldSelected" @on-change="onAppleFieldsChange">
+                        <div v-for="item in appleFields" :key="'a-' + item.key" class="bundle-field-option">
+                            <Checkbox :label="item.key">
+                                <span v-text="item.key"></span>
+                                <span style="color: #808695; margin-left: 4px" v-text="'（' + item.tip + '）'"></span>
+                            </Checkbox>
+                        </div>
+                    </Checkbox-Group>
+                </div>
+            </Tab-Pane>
+            <Tab-Pane label="Google" name="google">
+                <div class="bundle-field-tab-toolbar">
+                    <a href="javascript:void(0)" @click="selectAllGoogleFields">全选</a>
+                    <span style="margin: 0 6px; color: #dcdee2">|</span>
+                    <a href="javascript:void(0)" @click="clearGoogleFields">清空</a>
+                    <span v-if="appleFieldSelected.length > 0" style="margin-left: 10px; color: #ed4014; font-size: 12px">
+                        已选 Apple 字段，勾选 Google 将清空 Apple 选择
+                    </span>
+                </div>
+                <div class="bundle-field-tab-body">
+                    <Checkbox-Group v-model="googleFieldSelected" @on-change="onGoogleFieldsChange">
+                        <div v-for="item in googleFields" :key="'g-' + item.key" class="bundle-field-option">
+                            <Checkbox :label="item.key">
+                                <span v-text="item.key"></span>
+                                <span style="color: #808695; margin-left: 4px" v-text="'（' + item.tip + '）'"></span>
+                            </Checkbox>
+                        </div>
+                    </Checkbox-Group>
+                </div>
+            </Tab-Pane>
+        </Tabs>
+    </Modal>
+</section>
+
+<style>
+    .bundle-status-box {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid rgba(0, 102, 136, 0.6);
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.6);
+        min-height: 420px;
+        max-height: 520px;
+        overflow: auto;
+    }
+    .bundle-status-table {
+        width: 100%;
+        table-layout: fixed;
+        border-collapse: collapse;
+    }
+    .bundle-status-table th,
+    .bundle-status-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(0, 102, 136, 0.15);
+        vertical-align: middle;
+        line-height: 1.5;
+        box-sizing: border-box;
+    }
+    .bundle-status-table th {
+        position: sticky;
+        top: 0;
+        background: rgba(240, 245, 248, 0.96);
+        color: #808695;
+        font-weight: 600;
+        border-bottom: 1px solid rgba(0, 102, 136, 0.28);
+        z-index: 1;
+    }
+    .bundle-status-table tr:last-child td {
+        border-bottom: none;
+    }
+    .bundle-field-tab-toolbar {
+        margin-bottom: 10px;
+        line-height: 1.6;
+    }
+    .bundle-field-tab-body {
+        max-height: 380px;
+        overflow: auto;
+        border: 1px solid #e8eaec;
+        border-radius: 6px;
+        padding: 10px 12px;
+        box-sizing: border-box;
+    }
+    .bundle-field-option {
+        margin-bottom: 8px;
+    }
+    .bundle-field-option:last-child {
+        margin-bottom: 0;
+    }
+</style>
+
+<script>
+    var render = {
+        data() {
+            return {
+                bundles: "",
+                fields: "",
+                resultText: "",
+                resultMode: "json",
+                statusRows: [],
+                loading: false,
+                statusLoading: false,
+                fieldModal: false,
+                fieldTab: "apple",
+                appleFieldSelected: [],
+                googleFieldSelected: [],
+                appleFields: [
+                    { key: "trackName", tip: "应用名称" },
+                    { key: "bundleId", tip: "Bundle ID" },
+                    { key: "trackId", tip: "App Store ID" },
+                    { key: "trackViewUrl", tip: "商店链接" },
+                    { key: "description", tip: "描述" },
+                    { key: "artworkUrl512", tip: "图标 512" },
+                    { key: "artworkUrl100", tip: "图标 100" },
+                    { key: "artworkUrl60", tip: "图标 60" },
+                    { key: "averageUserRating", tip: "评分" },
+                    { key: "averageUserRatingForCurrentVersion", tip: "当前版本评分" },
+                    { key: "userRatingCount", tip: "评分人数" },
+                    { key: "userRatingCountForCurrentVersion", tip: "当前版本评分人数" },
+                    { key: "price", tip: "价格" },
+                    { key: "currency", tip: "币种" },
+                    { key: "formattedPrice", tip: "价格文本" },
+                    { key: "version", tip: "版本" },
+                    { key: "trackContentRating", tip: "内容分级" },
+                    { key: "contentAdvisoryRating", tip: "内容警告分级" },
+                    { key: "primaryGenreName", tip: "主分类" },
+                    { key: "primaryGenreId", tip: "主分类 ID" },
+                    { key: "genres", tip: "分类列表" },
+                    { key: "genreIds", tip: "分类 ID 列表" },
+                    { key: "releaseDate", tip: "首次发布" },
+                    { key: "currentVersionReleaseDate", tip: "最近更新" },
+                    { key: "screenshotUrls", tip: "截图" },
+                    { key: "ipadScreenshotUrls", tip: "iPad 截图" },
+                    { key: "minimumOsVersion", tip: "最低系统版本" },
+                    { key: "fileSizeBytes", tip: "包体积" },
+                    { key: "languageCodesISO2A", tip: "支持语言" },
+                    { key: "supportedDevices", tip: "支持设备" },
+                    { key: "features", tip: "特性" },
+                    { key: "advisories", tip: "内容警告" },
+                    { key: "isGameCenterEnabled", tip: "Game Center" },
+                    { key: "isVppDeviceBasedLicensingEnabled", tip: "VPP 许可" },
+                    { key: "developer", tip: "开发者详情对象" }
+                ],
+                googleFields: [
+                    { key: "name", tip: "应用名称" },
+                    { key: "id", tip: "包名" },
+                    { key: "url", tip: "商店链接" },
+                    { key: "locale", tip: "语言区域" },
+                    { key: "country", tip: "国家" },
+                    { key: "description", tip: "描述" },
+                    { key: "developerName", tip: "开发者" },
+                    { key: "icon", tip: "图标" },
+                    { key: "cover", tip: "封面" },
+                    { key: "screenshots", tip: "截图" },
+                    { key: "video", tip: "视频" },
+                    { key: "score", tip: "评分" },
+                    { key: "numberVoters", tip: "评分人数" },
+                    { key: "numberReviews", tip: "评论数" },
+                    { key: "histogramRating", tip: "评分分布" },
+                    { key: "reviews", tip: "评论列表" },
+                    { key: "installs", tip: "安装量" },
+                    { key: "installsText", tip: "安装量文本" },
+                    { key: "price", tip: "价格" },
+                    { key: "currency", tip: "币种" },
+                    { key: "priceText", tip: "价格文本" },
+                    { key: "offersIAP", tip: "含内购" },
+                    { key: "offersIAPCost", tip: "内购价格" },
+                    { key: "containsAds", tip: "含广告" },
+                    { key: "appVersion", tip: "版本" },
+                    { key: "androidVersion", tip: "Android 版本" },
+                    { key: "minAndroidVersion", tip: "最低 Android 版本" },
+                    { key: "contentRating", tip: "内容分级" },
+                    { key: "category", tip: "分类" },
+                    { key: "categoryFamily", tip: "分类族" },
+                    { key: "released", tip: "首次发布" },
+                    { key: "releasedTimestamp", tip: "首次发布时间戳" },
+                    { key: "updated", tip: "最近更新" },
+                    { key: "updatedTimestamp", tip: "最近更新时间戳" },
+                    { key: "privacyPoliceUrl", tip: "隐私政策" },
+                    { key: "recentChange", tip: "更新说明" },
+                    { key: "editorsChoice", tip: "编辑精选" },
+                    { key: "developer", tip: "开发者详情对象" }
+                ]
+            }
+        },
+        computed: {
+            canCopy() {
+                if (this.resultMode === "status") {
+                    return this.statusRows.length > 0
+                }
+                return !!this.resultText
+            },
+            appleFieldKeySet() {
+                const set = {}
+                for (let i = 0; i < this.appleFields.length; i++) {
+                    set[this.appleFields[i].key] = true
+                }
+                return set
+            },
+            googleFieldKeySet() {
+                const set = {}
+                for (let i = 0; i < this.googleFields.length; i++) {
+                    set[this.googleFields[i].key] = true
+                }
+                return set
+            }
+        },
+        methods: {
+            parseFieldList() {
+                return String(this.fields || "")
+                    .split(/[\n,，\t ]+/)
+                    .map((s) => s.trim())
+                    .filter((s) => !!s)
+            },
+            openFieldModal() {
+                const list = this.parseFieldList()
+                const apple = []
+                const google = []
+                for (let i = 0; i < list.length; i++) {
+                    const key = list[i]
+                    if (this.appleFieldKeySet[key]) {
+                        apple.push(key)
+                    } else if (this.googleFieldKeySet[key]) {
+                        google.push(key)
+                    }
+                }
+                // 不可交叉：若两侧都有，优先保留数量更多的一侧
+                if (apple.length > 0 && google.length > 0) {
+                    if (apple.length >= google.length) {
+                        this.appleFieldSelected = apple
+                        this.googleFieldSelected = []
+                    } else {
+                        this.appleFieldSelected = []
+                        this.googleFieldSelected = google
+                    }
+                } else {
+                    this.appleFieldSelected = apple
+                    this.googleFieldSelected = google
+                }
+                if (this.googleFieldSelected.length > 0 && this.appleFieldSelected.length === 0) {
+                    this.fieldTab = "google"
+                } else {
+                    this.fieldTab = "apple"
+                }
+                this.fieldModal = true
+            },
+            onAppleFieldsChange(val) {
+                if (Array.isArray(val) && val.length > 0) {
+                    this.googleFieldSelected = []
+                }
+            },
+            onGoogleFieldsChange(val) {
+                if (Array.isArray(val) && val.length > 0) {
+                    this.appleFieldSelected = []
+                }
+            },
+            selectAllAppleFields() {
+                this.googleFieldSelected = []
+                this.appleFieldSelected = this.appleFields.map((item) => item.key)
+            },
+            selectAllGoogleFields() {
+                this.appleFieldSelected = []
+                this.googleFieldSelected = this.googleFields.map((item) => item.key)
+            },
+            clearAppleFields() {
+                this.appleFieldSelected = []
+            },
+            clearGoogleFields() {
+                this.googleFieldSelected = []
+            },
+            clearFields() {
+                this.fields = ""
+            },
+            applyFieldModal() {
+                if (this.appleFieldSelected.length > 0 && this.googleFieldSelected.length > 0) {
+                    this.$Notice.warning({ title: '提示', desc: '不可同时选择 Apple 与 Google 字段' })
+                    return
+                }
+                let selected = []
+                let order = []
+                if (this.appleFieldSelected.length > 0) {
+                    selected = this.appleFieldSelected.slice()
+                    order = this.appleFields.map((item) => item.key)
+                } else if (this.googleFieldSelected.length > 0) {
+                    selected = this.googleFieldSelected.slice()
+                    order = this.googleFields.map((item) => item.key)
+                }
+                selected.sort((a, b) => order.indexOf(a) - order.indexOf(b))
+                this.fields = selected.join("\n")
+                this.fieldModal = false
+            },
+            hasCrossPlatformFields(list) {
+                let hasAppleOnly = false
+                let hasGoogleOnly = false
+                for (let i = 0; i < list.length; i++) {
+                    const key = list[i]
+                    const inApple = !!this.appleFieldKeySet[key]
+                    const inGoogle = !!this.googleFieldKeySet[key]
+                    if (inApple && !inGoogle) {
+                        hasAppleOnly = true
+                    }
+                    if (inGoogle && !inApple) {
+                        hasGoogleOnly = true
+                    }
+                }
+                return hasAppleOnly && hasGoogleOnly
+            },
+            getShareData() {
+                return {
+                    "bundles": this.bundles,
+                    "fields": this.fields,
+                    "resultText": this.resultText,
+                    "resultMode": this.resultMode,
+                    "statusRows": this.statusRows
+                }
+            },
+            initShareData(data) {
+                this.bundles = data["bundles"] || ""
+                this.fields = data["fields"] || ""
+                this.resultText = data["resultText"] || data["resultJson"] || ""
+                this.resultMode = data["resultMode"] || "json"
+                this.statusRows = data["statusRows"] || []
+            },
+            toPrettyJson(obj) {
+                try {
+                    return JSON.stringify(obj, null, 2)
+                } catch (e) {
+                    return String(obj)
+                }
+            },
+            buildStatusRows(list) {
+                const rows = []
+                for (let i = 0; i < list.length; i++) {
+                    const item = list[i] || {}
+                    rows.push({
+                        name: String(item.bundle || ""),
+                        status: (!item.error && item.info) ? "上架" : "下架"
+                    })
+                }
+                return rows
+            },
+            statusCopyText() {
+                const lines = []
+                for (let i = 0; i < this.statusRows.length; i++) {
+                    lines.push(this.statusRows[i].name + "\t" + this.statusRows[i].status)
+                }
+                return lines.join("\n")
+            },
+            copyResult() {
+                const text = this.resultMode === "status" ? this.statusCopyText() : this.resultText
+                if (!text) {
+                    return
+                }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        this.$Notice.success({ title: '提示', desc: '已复制' })
+                    }).catch(() => {
+                        this.$Notice.error({ title: '提示', desc: '复制失败' })
+                    })
+                    return
+                }
+                const textarea = document.createElement('textarea')
+                textarea.value = text
+                document.body.appendChild(textarea)
+                textarea.select()
+                try {
+                    document.execCommand('copy')
+                    this.$Notice.success({ title: '提示', desc: '已复制' })
+                } catch (e) {
+                    this.$Notice.error({ title: '提示', desc: '复制失败' })
+                }
+                document.body.removeChild(textarea)
+            },
+            requestExtract(fields) {
+                return axios.post('/adx/bundle/extract', {
+                    bundles: this.bundles,
+                    fields: fields || ""
+                }).then((response) => {
+                    const resp = response.data
+                    if (resp.status === 200) {
+                        return Array.isArray(resp.data) ? resp.data : []
+                    }
+                    return Promise.reject(new Error(resp.message || '提取失败'))
+                })
+            },
+            uniqueTotal(list) {
+                const seen = {}
+                let total = 0
+                for (let i = 0; i < list.length; i++) {
+                    const item = list[i] || {}
+                    const key = String(item.bundle || "")
+                    if (!key || seen[key]) {
+                        continue
+                    }
+                    seen[key] = true
+                    total++
+                }
+                return total
+            },
+            extract() {
+                if (!this.bundles || !this.bundles.trim()) {
+                    this.$Notice.warning({ title: '提示', desc: '请输入 bundle' })
+                    return
+                }
+                const fieldList = this.parseFieldList()
+                if (this.hasCrossPlatformFields(fieldList)) {
+                    this.$Notice.warning({ title: '提示', desc: '不可交叉选择 Apple 与 Google 字段，请重新选择' })
+                    return
+                }
+                this.loading = true
+                this.requestExtract(this.fields).then((list) => {
+                    this.resultMode = "json"
+                    this.statusRows = []
+                    this.resultText = this.toPrettyJson({
+                        total: this.uniqueTotal(list),
+                        list: list
+                    })
+                }).catch((error) => {
+                    console.log(error)
+                    this.resultMode = "json"
+                    this.statusRows = []
+                    this.resultText = ""
+                    this.$Notice.error({ title: '提示', desc: error.message || '请求失败' })
+                }).finally(() => {
+                    this.loading = false
+                })
+            },
+            checkStatus() {
+                if (!this.bundles || !this.bundles.trim()) {
+                    this.$Notice.warning({ title: '提示', desc: '请输入 bundle' })
+                    return
+                }
+                this.statusLoading = true
+                this.requestExtract("").then((list) => {
+                    this.resultMode = "status"
+                    this.resultText = ""
+                    this.statusRows = this.buildStatusRows(list)
+                }).catch((error) => {
+                    console.log(error)
+                    this.resultMode = "status"
+                    this.resultText = ""
+                    this.statusRows = []
+                    this.$Notice.error({ title: '提示', desc: error.message || '请求失败' })
+                }).finally(() => {
+                    this.statusLoading = false
+                })
+            }
+        }
+    }
+</script>
+
+{{template "footer" .}}
