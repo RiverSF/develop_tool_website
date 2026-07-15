@@ -66,7 +66,7 @@ func SaveData(c *gin.Context) {
 		Name:   req.Name,
 		Token:  token,
 		Data:   string(dataBytes),
-		Status: 0,
+		Status: model.ShareStatusOK,
 	}
 
 	sm := model.NewShareModel()
@@ -160,7 +160,7 @@ func Delete(c *gin.Context) {
 		return
 	}
 
-	share.Status = 1
+	share.Status = model.ShareStatusDeleted
 	if err := model.NewShareModel().Update(share); err != nil {
 		base.ResponseError(c, err.Error())
 		return

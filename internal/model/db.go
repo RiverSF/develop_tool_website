@@ -13,8 +13,13 @@ import (
 
 var db *gorm.DB
 
+// SetDB replaces the package DB handle. Intended for tests.
+func SetDB(d *gorm.DB) {
+	db = d
+}
+
 func Init() error {
-	connArgs := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
+	connArgs := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		config.MysqlConfig.MysqlUser,
 		config.MysqlConfig.MysqlPassword,
 		config.MysqlConfig.MysqlHost,

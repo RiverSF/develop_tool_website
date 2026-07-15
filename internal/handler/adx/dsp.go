@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -97,7 +96,6 @@ func AdxSaveDspNotice(c *gin.Context) {
 		NoticeType: noticeTypeInt,
 		Ip:         netIp,
 		Ua:         ua,
-		CreateTime: time.Now().Format("2006-01-02 15:04:05"),
 	}
 
 	err = model.NewDspNoticeModel().Save(dspNotice)

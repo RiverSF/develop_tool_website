@@ -11,6 +11,7 @@ type UserKey struct {
 	UserId     int       `json:"user_id"`
 	BrowserKey string    `json:"browser_key"`
 	UserAgent  string    `json:"user_agent"`
+	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"-"`
 }
 

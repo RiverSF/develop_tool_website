@@ -2,13 +2,16 @@ package model
 
 import (
 	"errors"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 type User struct {
-	Id   int    `gorm:"primary_key" json:"id"`
-	Name string `json:"name"`
+	Id        int       `gorm:"primary_key" json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (m User) TableName() string {
@@ -34,7 +37,7 @@ func (m *UserModel) FindOrCreateByName(name string) (*User, error) {
 
 	user = User{Name: name}
 	if err := db.Create(&user).Error; err != nil {
-		if isDuplicateEntry(err) {
+		if IsDuplicateEntry(err) {
 			if err := db.Where("name = ?", name).First(&user).Error; err != nil {
 				return nil, err
 			}

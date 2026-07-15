@@ -1,18 +1,27 @@
 package model
 
+import "time"
+
+const (
+	DspMarketOverseas = 0 // 海外
+	DspMarketCN       = 1 // 国内
+)
+
 type Dsp struct {
-	Id                  int     `gorm:"primary_key" json:"id"`
-	Name                string  `json:"name"`
-	UniqueKey           string  `json:"unique_key"`
-	IsCn                int     `json:"is_cn"`
-	RequestId           string  `json:"request_id"`
-	Price               float64 `json:"price"`
-	Adm                 string  `json:"adm"`
-	Crid                string  `json:"crid"`
-	Bundle              string  `json:"bundle"`
-	Deeplink            string  `json:"deeplink"`
-	Deeplinkfallbackurl string  `json:"deeplinkfallbackurl"`
-	Fallback            string  `json:"fallback"`
+	Id                  int       `gorm:"primary_key" json:"id"`
+	Name                string    `json:"name"`
+	UniqueKey           string    `json:"unique_key"`
+	IsCn                int       `json:"is_cn"`
+	RequestId           string    `json:"request_id"`
+	Price               float64   `json:"price"`
+	Adm                 string    `json:"adm"`
+	Crid                string    `json:"crid"`
+	Bundle              string    `json:"bundle"`
+	Deeplink            string    `json:"deeplink"`
+	Deeplinkfallbackurl string    `json:"deeplinkfallbackurl"`
+	Fallback            string    `json:"fallback"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
 }
 
 func (m Dsp) TableName() string {
@@ -28,7 +37,7 @@ func NewDspModel() *DspModel {
 
 func (m *DspModel) GetDspList(isCn int) (dspList []*Dsp) {
 	dspList = []*Dsp{}
-	db.Where("is_cn = ?", isCn).Omit("adm").Order("updatetime desc").Find(&dspList)
+	db.Where("is_cn = ?", isCn).Omit("adm").Order("updated_at desc").Find(&dspList)
 	return
 }
 
