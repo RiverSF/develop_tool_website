@@ -22,6 +22,12 @@ const menuList = [
                 rate: 0.4
             },
             {
+                id: 109,
+                name: 'XML 格式化',
+                url: '/xml',
+                rate: 0.1
+            },
+            {
                 id: 104,
                 name: 'Md5 加密',
                 url: '/md5',

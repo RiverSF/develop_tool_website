@@ -1,0 +1,79 @@
+{{template "header" .}}
+
+<section>
+    <div style="width: 49%; float: left">
+        <i-Input v-model="content1" type="textarea" class="glass-input" :rows="globalTextareaRowsWithButton" placeholder="粘贴 XML ..."></i-Input>
+
+        <div style="float: left; margin-top: 10px;width: 600px">
+            <i-button type="primary" style="" @click="conv()"> XML 格式化 >></i-button>
+        </div>
+    </div>
+
+    <div style="width: 49%; float: left;margin-left: 15px">
+        <i-Input v-model="content2" type="textarea" :rows="globalTextareaRowsWithButton" placeholder="格式化结果 ..."></i-Input>
+    </div>
+</section>
+
+<script>
+
+    var render = {
+        data () {
+            return {
+                content1: "",
+                content2: ""
+            }
+        },
+        watch: {
+
+        },
+        methods: {
+            getShareData() {
+                return {
+                    "content1":this.content1,
+                    "content2":this.content2,
+                }
+            },
+            initShareData(data) {
+                this.content1 = data["content1"] || ""
+                this.content2 = data["content2"] || ""
+            },
+            conv() {
+                var ct = this.content1 || ""
+                if (!ct.trim()) {
+                    this.content2 = ""
+                    return
+                }
+                this.content2 = this.formatXml(ct)
+            },
+            formatXml(xml) {
+                const PADDING = ' '.repeat(4);
+                const reg = /(>)(<)(\/*)/g;
+                let pad = 0;
+
+                xml = xml.replace(/\r\n\s*/g, "")
+                xml = xml.replace(reg, '$1\r\n$2$3');
+
+                return xml.split('\r\n').map((node, index) => {
+                    let indent = 0;
+                    if (node.match(/.+<\/\w[^>]*>$/)) {
+                        indent = 0;
+                    } else if (node.match(/^<\/\w/) && pad > 0) {
+                        pad -= 1;
+                    } else if (node.match(/^<\w[^>]*[^\/]>.*$/)) {
+                        indent = 1;
+                    } else {
+                        indent = 0;
+                    }
+
+                    pad += indent;
+                    return PADDING.repeat(pad - indent) + node;
+                }).join('\r\n');
+            }
+        },
+        mounted(){
+
+        }
+    }
+</script>
+
+{{template "footer" .}}

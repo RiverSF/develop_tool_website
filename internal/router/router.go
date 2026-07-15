@@ -33,6 +33,7 @@ func registerRoutes(r *gin.Engine) {
 		root.GET("/timestamp", tools.ConversionTimestamp)
 		root.GET("/json", tools.ConversionJson)
 		root.GET("/html", tools.ConversionHtml)
+		root.GET("/xml", tools.ConversionXml)
 		root.GET("/md5", tools.ConversionMd5)
 		root.GET("/url", tools.ConversionUrl)
 		root.GET("/base64", tools.ConversionBase64)

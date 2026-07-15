@@ -30,6 +30,7 @@ func TestNewRegistersCoreAndAdxRoutes(t *testing.T) {
 		{http.MethodGet, "/ping"},
 		{http.MethodGet, "/"},
 		{http.MethodGet, "/data-calculator"},
+		{http.MethodGet, "/xml"},
 		{http.MethodGet, "/adx"},
 		{http.MethodGet, "/adx/cn"},
 		{http.MethodGet, "/adx/dsp"},

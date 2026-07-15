@@ -8,6 +8,7 @@ import (
 
 func ConversionJson(c *gin.Context)      { render.Page(c, "conversion_json.html") }
 func ConversionHtml(c *gin.Context)      { render.Page(c, "conversion_html.html") }
+func ConversionXml(c *gin.Context)       { render.Page(c, "conversion_xml.html") }
 func ConversionTimestamp(c *gin.Context) { render.Page(c, "conversion_timestamp.html") }
 func ConversionMd5(c *gin.Context)       { render.Page(c, "conversion_md5.html") }
 func ConversionUrl(c *gin.Context)       { render.Page(c, "conversion_url.html") }
