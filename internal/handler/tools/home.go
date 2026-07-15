@@ -1,4 +1,4 @@
-package home
+package tools
 
 import (
 	"github.com/gin-gonic/gin"

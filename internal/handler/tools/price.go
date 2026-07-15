@@ -1,4 +1,4 @@
-package price
+package tools
 
 import (
 	"net/http"

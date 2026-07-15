@@ -1,2 +1,6 @@
 .idea/
 logs/
+*.exe
+*.tmp
+develop_tools.exe
+internal/conf/app.ini.tmp

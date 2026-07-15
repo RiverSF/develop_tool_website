@@ -4,92 +4,96 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"develop_tools/internal/handler/adx"
-	"develop_tools/internal/handler/bundle"
-	"develop_tools/internal/handler/conversion"
-	"develop_tools/internal/handler/data"
-	"develop_tools/internal/handler/dev"
-	"develop_tools/internal/handler/home"
-	"develop_tools/internal/handler/price"
 	"develop_tools/internal/handler/share"
-	"develop_tools/internal/handler/sid"
-	"develop_tools/internal/handler/trans"
+	"develop_tools/internal/handler/tools"
 	"develop_tools/internal/handler/user"
 	"develop_tools/internal/middleware"
+	"develop_tools/pkg/path"
 )
 
-func Init(r *gin.Engine) {
-	initRouter(r)
-}
-
-func initRouter(r *gin.Engine) {
+// New creates the HTTP engine with middleware, routes, and static assets.
+func New() *gin.Engine {
+	r := gin.New()
+	r.Use(gin.Recovery())
 	r.Use(middleware.LoggerMiddleware())
 
+	registerRoutes(r)
+
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "pong"})
+	})
+	r.Static("/assets", path.Join("assets"))
+	return r
+}
+
+func registerRoutes(r *gin.Engine) {
 	root := r.Group("/")
 	{
-		root.GET("", home.Home)
-		root.GET("/timestamp", conversion.ConversionTimestamp)
-		root.GET("/json", conversion.ConversionJson)
-		root.GET("/html", conversion.ConversionHtml)
-		root.GET("/md5", conversion.ConversionMd5)
-		root.GET("/url", conversion.ConversionUrl)
-		root.GET("/base64", conversion.ConversionBase64)
-		root.GET("/utf8", conversion.ConversionUtf8)
-		root.GET("/unicode", conversion.ConversionUnicode)
-		root.GET("/markdown", conversion.MarkDown)
+		root.GET("", tools.Home)
+		root.GET("/timestamp", tools.ConversionTimestamp)
+		root.GET("/json", tools.ConversionJson)
+		root.GET("/html", tools.ConversionHtml)
+		root.GET("/md5", tools.ConversionMd5)
+		root.GET("/url", tools.ConversionUrl)
+		root.GET("/base64", tools.ConversionBase64)
+		root.GET("/utf8", tools.ConversionUtf8)
+		root.GET("/unicode", tools.ConversionUnicode)
+		root.GET("/markdown", tools.MarkDown)
 
-		root.GET("/data-diff", data.DataDiff)
-		root.GET("/data-editor", data.DataEditor)
-		root.GET("/data-filter", data.DataFilter)
-		root.GET("/data-combine", data.DataCombine)
-		root.GET("/data-calculator", data.DataCalculcator)
-		root.POST("/data-calc", data.DataCalc)
-		root.GET("/data-unique", data.DataUnique)
-		root.POST("/data-unique-exec", data.DataUniqueExec)
-		root.GET("/data-interval", data.DataInterval)
-		root.GET("/data-line", data.DataLine)
+		root.GET("/data-diff", tools.DataDiff)
+		root.GET("/data-editor", tools.DataEditor)
+		root.GET("/data-filter", tools.DataFilter)
+		root.GET("/data-combine", tools.DataCombine)
+		root.GET("/data-calculator", tools.DataCalculator)
+		root.POST("/data-calc", tools.DataCalc)
+		root.GET("/data-unique", tools.DataUnique)
+		root.POST("/data-unique-exec", tools.DataUniqueExec)
+		root.GET("/data-interval", tools.DataInterval)
+		root.GET("/data-line", tools.DataLine)
 
-		root.GET("/aes", conversion.ConversionAes)
-		root.GET("/trans", trans.ConversionTrans)
-		root.GET("/trans/youdao", trans.ConversionTransYoudao)
+		root.GET("/aes", tools.ConversionAes)
+		root.GET("/trans", tools.ConversionTrans)
+		root.GET("/trans/youdao", tools.ConversionTransYoudao)
 
-		root.GET("/price", price.ConversionPrice)
-		root.POST("/price/price-encrypt", price.PriceEncrypt)
+		root.GET("/price", tools.ConversionPrice)
+		root.POST("/price/price-encrypt", tools.PriceEncrypt)
 
-		root.GET("/sid", sid.Sid)
-		root.POST("/sid/get", sid.GetSid)
+		root.GET("/sid", tools.Sid)
+		root.POST("/sid/get", tools.GetSid)
 
-		root.GET("/bundle", bundle.BundleIndex)
+		root.GET("/bundle", adx.BundleIndex)
 
-		root.GET("/gepip", conversion.GeoIp)
-		root.GET("/chart-sankey", conversion.ChartSankey)
-		root.GET("/timeline", conversion.Timeline)
-		root.GET("/map", conversion.Map)
-		root.GET("/realtime-translation", conversion.RealtimeTranslation)
+		root.GET("/gepip", tools.GeoIp)
+		root.GET("/chart-sankey", tools.ChartSankey)
+		root.GET("/timeline", tools.Timeline)
+		root.GET("/map", tools.Map)
+		root.GET("/realtime-translation", tools.RealtimeTranslation)
 
-		root.GET("/dev/json2gostruct", dev.DevJson2GoStruct)
-		root.POST("/dev/json2gostruct", dev.DevJson2GoStructApi)
+		root.GET("/dev/json2gostruct", tools.DevJson2GoStruct)
+		root.POST("/dev/json2gostruct", tools.DevJson2GoStructApi)
 	}
 
 	adxGroup := r.Group("/adx")
 	{
+		// pages
 		adxGroup.GET("", adx.AdxIndex)
 		adxGroup.GET("/cn", adx.AdxCn)
 		adxGroup.GET("/dsp", adx.AdxDSP)
 		adxGroup.GET("/adm", adx.AdxAdm)
 
+		// DSP CRUD + notice
 		adxGroup.POST("/adxGetDspList", adx.AdxGetDspList)
 		adxGroup.GET("/adxGetDspAdm", adx.AdxGetDspAdm)
 		adxGroup.GET("/adxGetDspResponse", adx.AdxGetDspResponse)
-
 		adxGroup.POST("/adxDspSave", adx.AdxDspSave)
 		adxGroup.GET("/adxGetDspNotice", adx.AdxGetDspNotice)
 
-		adxGroup.POST("/bundle/extract", bundle.Extract)
+		adxGroup.POST("/bundle/extract", adx.Extract)
 
+		// bid（notice 回调与 param 路由保持原注册顺序）
 		adxGroup.POST("/cn/:uniqueKey", adx.AdxBidCn)
 		adxGroup.GET("/:uniqueKey/:noticeType", adx.AdxSaveDspNotice)
 		adxGroup.POST("/:uniqueKey", adx.AdxBid)
-
 		adxGroup.POST("/dsp/:uniqueKey", adx.AdxBidDsp)
 		adxGroup.GET("/userSync", adx.AdxUserSync)
 	}

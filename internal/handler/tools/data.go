@@ -1,4 +1,4 @@
-package data
+package tools
 
 import (
 	"net/http"
@@ -25,7 +25,7 @@ func DataCombine(c *gin.Context) {
 	render.Page(c, "data_combine.html")
 }
 
-func DataCalculcator(c *gin.Context) {
+func DataCalculator(c *gin.Context) {
 	render.Page(c, "data_calculator.html")
 }
 

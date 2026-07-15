@@ -1,4 +1,4 @@
-package sid
+package tools
 
 import (
 	"errors"

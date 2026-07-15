@@ -1,4 +1,4 @@
-package dev
+package tools
 
 import (
 	"net/http"

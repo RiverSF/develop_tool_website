@@ -16,7 +16,6 @@ import (
 	"develop_tools/internal/model"
 	"develop_tools/internal/router"
 	"develop_tools/pkg/logger"
-	"develop_tools/pkg/path"
 )
 
 func main() {
@@ -36,7 +35,7 @@ func main() {
 
 	s := &http.Server{
 		Addr:           fmt.Sprintf(":%d", config.ServerConfig.ServerPort),
-		Handler:        getRouter(),
+		Handler:        router.New(),
 		ReadTimeout:    time.Duration(config.ServerConfig.ReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(config.ServerConfig.WriteTimeout) * time.Second,
 		MaxHeaderBytes: 1 << 20,
@@ -58,17 +57,4 @@ func main() {
 	if err := s.Shutdown(ctx); err != nil {
 		log.Fatalf("server shutdown failed, err=%s", err.Error())
 	}
-}
-
-func getRouter() *gin.Engine {
-	r := gin.New()
-	r.Use(gin.Recovery())
-
-	router.Init(r)
-
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "pong"})
-	})
-	r.Static("/assets", path.Join("assets"))
-	return r
 }
