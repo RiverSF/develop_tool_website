@@ -144,3 +144,70 @@ gitnexus doctor                  # 诊断运行时能力（如 FTS 扩展）
 索引数据在 `.gitnexus/`（已忽略，勿提交）。改完大量代码后若 Agent 提示 index stale，再跑一次 `gitnexus analyze`。
 
 更多说明见 [GitNexus 文档](https://github.com/abhigyanpatwari/GitNexus)。
+
+## Agency Agents（中文专家角色库）使用说明
+
+本项目已接入 [agency-agents-zh](https://github.com/jnMetaCode/agency-agents-zh)：把专家角色安装为 Cursor Project Rules（`.mdc`），对话时按描述自动匹配，或用 `@` 手动引用。
+
+**安装位置：** `.cursor/rules/*.mdc`（项目级）
+
+> 官方建议只保留约 10–20 个规则，避免全量安装稀释自动匹配。本仓库已精选 **18 个开发相关** 角色（见下表）；营销 / 销售 / 游戏等已剔除。
+
+### 当前保留的角色
+
+| 规则文件 | 角色 |
+|----------|------|
+| `engineering-backend-architect.mdc` | 后端架构师 |
+| `engineering-frontend-developer.mdc` | 前端开发者 |
+| `engineering-software-architect.mdc` | 软件架构师 |
+| `engineering-code-reviewer.mdc` | 代码审查员 |
+| `engineering-security-engineer.mdc` | 安全工程师 |
+| `engineering-devops-automator.mdc` | DevOps 自动化 |
+| `engineering-sre.mdc` | 站点可靠性工程师 |
+| `engineering-database-optimizer.mdc` | 数据库优化 |
+| `engineering-git-workflow-master.mdc` | Git 工作流 |
+| `engineering-technical-writer.mdc` | 技术文档 |
+| `engineering-codebase-onboarding-engineer.mdc` | 代码库上手 |
+| `engineering-minimal-change-engineer.mdc` | 最小改动工程 |
+| `engineering-ai-engineer.mdc` | AI 工程师 |
+| `engineering-incident-response-commander.mdc` | 故障响应 |
+| `testing-api-tester.mdc` | API 测试 |
+| `testing-performance-benchmarker.mdc` | 性能基准 |
+| `testing-reality-checker.mdc` | 交付验收 |
+| `specialized-mcp-builder.mdc` | MCP 构建 |
+
+### 如何使用
+
+1. `.cursor/rules/` 下的 `.mdc` 会被 Cursor 自动识别（`alwaysApply: false`，按 `description` **智能匹配**）。
+2. 在 Chat / Agent 中正常提问即可，例如：
+   ```text
+   帮我审查这个组件的性能问题   → 倾向匹配前端开发者
+   这段代码有安全漏洞吗         → 倾向匹配安全工程师
+   设计一下这个 API 的后端架构   → 倾向匹配后端架构师
+   ```
+3. 也可在对话里用 `@规则名` 手动指定某个智能体。
+4. 在 **Cursor Settings**（`Ctrl+,`）→ **Rules** → **Project Rules** 中查看 / 开关已安装规则。
+
+### 安装 / 增补角色（Windows）
+
+全量转换后，只拷贝需要的 `.mdc` 到本项目（推荐），避免再次全量灌入：
+
+```powershell
+git clone --depth 1 https://github.com/jnMetaCode/agency-agents-zh.git
+cd agency-agents-zh
+powershell -ExecutionPolicy Bypass -File .\scripts\convert.ps1 -Tool cursor
+
+# 按需拷贝到本项目
+Copy-Item .\integrations\cursor\rules\engineering-xxx.mdc D:\Project\develop_tool_website\.cursor\rules\
+```
+
+若仍用官方一键安装（会装入全部规则，装完请再精选删除）：
+
+```powershell
+cd D:\Project\develop_tool_website
+powershell -ExecutionPolicy Bypass -File D:\Project\agency-agents-zh\scripts\install.ps1 -Tool cursor
+```
+
+macOS / Linux：`./scripts/convert.sh --tool cursor`，再按需 `cp` 到 `.cursor/rules/`。
+
+更多角色说明见 [agency-agents-zh README](https://github.com/jnMetaCode/agency-agents-zh)。
