@@ -2,17 +2,16 @@ package model
 
 import (
 	"fmt"
-	"time"
 )
 
 type DspNotice struct {
-	Id         int       `gorm:"primary_key" json:"id"`
-	DspId      int       `json:"dsp_id"`
-	NoticeType int       `json:"notice_type"`
-	Ip         string    `json:"ip"`
-	Ua         string    `json:"ua"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	Id         int    `gorm:"primary_key" json:"id"`
+	DspId      int    `json:"dsp_id"`
+	NoticeType int    `json:"notice_type"`
+	Ip         string `json:"ip"`
+	Ua         string `json:"ua"`
+	// 只读映射 schema 的 created_at，写入由 DB DEFAULT / 业务赋值负责
+	CreateTime string `gorm:"column:created_at;<-:false" json:"created_at"`
 }
 
 func (m DspNotice) TableName() string {

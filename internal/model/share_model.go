@@ -24,7 +24,6 @@ type Share struct {
 	Token     string    `json:"token"`
 	Data      string    `json:"data"`
 	Status    int       `json:"status"`
-	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
 	UpdatedDate string `gorm:"-" json:"updated_date"`

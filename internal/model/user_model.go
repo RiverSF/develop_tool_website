@@ -2,16 +2,13 @@ package model
 
 import (
 	"errors"
-	"time"
 
 	"gorm.io/gorm"
 )
 
 type User struct {
-	Id        int       `gorm:"primary_key" json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id   int    `gorm:"primary_key" json:"id"`
+	Name string `json:"name"`
 }
 
 func (m User) TableName() string {

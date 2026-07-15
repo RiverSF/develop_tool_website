@@ -131,9 +131,6 @@ func AdxGetDspNotice(c *gin.Context) {
 
 	var data = []*dataIterm{}
 	for _, dspNotice := range dspNoticeList {
-
-		//dspNotice.CreateTime =
-
 		var dtIterm = &dataIterm{
 			DspNotice: dspNotice,
 		}

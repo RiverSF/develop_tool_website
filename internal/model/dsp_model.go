@@ -1,27 +1,23 @@
 package model
 
-import "time"
-
 const (
 	DspMarketOverseas = 0 // 海外
 	DspMarketCN       = 1 // 国内
 )
 
 type Dsp struct {
-	Id                  int       `gorm:"primary_key" json:"id"`
-	Name                string    `json:"name"`
-	UniqueKey           string    `json:"unique_key"`
-	IsCn                int       `json:"is_cn"`
-	RequestId           string    `json:"request_id"`
-	Price               float64   `json:"price"`
-	Adm                 string    `json:"adm"`
-	Crid                string    `json:"crid"`
-	Bundle              string    `json:"bundle"`
-	Deeplink            string    `json:"deeplink"`
-	Deeplinkfallbackurl string    `json:"deeplinkfallbackurl"`
-	Fallback            string    `json:"fallback"`
-	CreatedAt           time.Time `json:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at"`
+	Id                  int     `gorm:"primary_key" json:"id"`
+	Name                string  `json:"name"`
+	UniqueKey           string  `json:"unique_key"`
+	IsCn                int     `json:"is_cn"`
+	RequestId           string  `json:"request_id"`
+	Price               float64 `json:"price"`
+	Adm                 string  `json:"adm"`
+	Crid                string  `json:"crid"`
+	Bundle              string  `json:"bundle"`
+	Deeplink            string  `json:"deeplink"`
+	Deeplinkfallbackurl string  `json:"deeplinkfallbackurl"`
+	Fallback            string  `json:"fallback"`
 }
 
 func (m Dsp) TableName() string {

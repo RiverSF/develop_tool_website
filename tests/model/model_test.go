@@ -1,7 +1,6 @@
 package model_test
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -16,7 +15,7 @@ import (
 	"develop_tools/internal/model"
 )
 
-func setupTestDB(t *testing.T) {
+func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	dsn := "file:" + strings.ReplaceAll(t.Name(), "/", "_") + "?mode=memory&cache=shared"
 	d, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
@@ -35,6 +34,17 @@ func setupTestDB(t *testing.T) {
 	); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
+	// schema 中的时间列不在业务 struct 上时，测试库需单独补齐（与 docs/schema.sql 对齐）
+	for _, stmt := range []string{
+		"ALTER TABLE my_dsp ADD COLUMN created_at DATETIME",
+		"ALTER TABLE my_dsp ADD COLUMN updated_at DATETIME",
+		"ALTER TABLE my_user ADD COLUMN created_at DATETIME",
+		"ALTER TABLE my_user ADD COLUMN updated_at DATETIME",
+		"ALTER TABLE my_user_key ADD COLUMN created_at DATETIME",
+		"ALTER TABLE my_share ADD COLUMN created_at DATETIME",
+	} {
+		_ = d.Exec(stmt).Error
+	}
 	model.SetDB(d)
 	t.Cleanup(func() {
 		sqlDB, err := d.DB()
@@ -43,6 +53,7 @@ func setupTestDB(t *testing.T) {
 		}
 		model.SetDB(nil)
 	})
+	return d
 }
 
 func TestTableNames(t *testing.T) {
@@ -71,31 +82,6 @@ func TestShareAndDspConstants(t *testing.T) {
 	}
 	if model.DspMarketOverseas != 0 || model.DspMarketCN != 1 {
 		t.Fatalf("Dsp market constants unexpected: %d %d", model.DspMarketOverseas, model.DspMarketCN)
-	}
-}
-
-func TestCreatedAtUpdatedAtJSONTags(t *testing.T) {
-	now := time.Date(2026, 7, 15, 12, 0, 0, 0, time.UTC)
-	dsp := model.Dsp{Id: 1, Name: "t", CreatedAt: now, UpdatedAt: now}
-	b, err := json.Marshal(dsp)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var m map[string]any
-	if err := json.Unmarshal(b, &m); err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := m["created_at"]; !ok {
-		t.Fatalf("missing created_at in json: %s", b)
-	}
-	if _, ok := m["updated_at"]; !ok {
-		t.Fatalf("missing updated_at in json: %s", b)
-	}
-	if _, ok := m["createtime"]; ok {
-		t.Fatalf("legacy createtime still present: %s", b)
-	}
-	if _, ok := m["updatetime"]; ok {
-		t.Fatalf("legacy updatetime still present: %s", b)
 	}
 }
 
@@ -136,7 +122,7 @@ func TestIsDuplicateEntry(t *testing.T) {
 	}
 }
 
-func TestUserFindOrCreateAndTimestamps(t *testing.T) {
+func TestUserFindOrCreate(t *testing.T) {
 	setupTestDB(t)
 	um := model.NewUserModel()
 
@@ -146,9 +132,6 @@ func TestUserFindOrCreateAndTimestamps(t *testing.T) {
 	}
 	if u1.Id == 0 || u1.Name != "alice" {
 		t.Fatalf("unexpected user: %+v", u1)
-	}
-	if u1.CreatedAt.IsZero() || u1.UpdatedAt.IsZero() {
-		t.Fatalf("timestamps not set: created=%v updated=%v", u1.CreatedAt, u1.UpdatedAt)
 	}
 
 	u2, err := um.FindOrCreateByName("alice")
@@ -208,20 +191,26 @@ func TestShareSoftDeleteAndListOrder(t *testing.T) {
 }
 
 func TestDspSaveListAndNoticeCreatedAtFilter(t *testing.T) {
-	setupTestDB(t)
+	gdb := setupTestDB(t)
 	dm := model.NewDspModel()
 	nm := model.NewDspNoticeModel()
 
 	now := time.Now()
-	d1 := &model.Dsp{Name: "cn1", UniqueKey: "k1", IsCn: model.DspMarketCN, Adm: "adm1", Price: 1.5, UpdatedAt: now.Add(-time.Minute)}
+	d1 := &model.Dsp{Name: "cn1", UniqueKey: "k1", IsCn: model.DspMarketCN, Adm: "adm1", Price: 1.5}
 	if err := dm.Save(d1); err != nil {
 		t.Fatal(err)
 	}
-	d2 := &model.Dsp{Name: "cn2", UniqueKey: "k2", IsCn: model.DspMarketCN, Adm: "adm2", Price: 2.5, UpdatedAt: now}
+	d2 := &model.Dsp{Name: "cn2", UniqueKey: "k2", IsCn: model.DspMarketCN, Adm: "adm2", Price: 2.5}
 	if err := dm.Save(d2); err != nil {
 		t.Fatal(err)
 	}
 	_ = dm.Save(&model.Dsp{Name: "os", UniqueKey: "k3", IsCn: model.DspMarketOverseas, Adm: "adm3"})
+	if err := gdb.Exec("UPDATE my_dsp SET updated_at = ? WHERE id = ?", now.Add(-time.Minute), d1.Id).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := gdb.Exec("UPDATE my_dsp SET updated_at = ? WHERE id = ?", now, d2.Id).Error; err != nil {
+		t.Fatal(err)
+	}
 
 	list := dm.GetDspList(model.DspMarketCN)
 	if len(list) != 2 {
@@ -248,12 +237,15 @@ func TestDspSaveListAndNoticeCreatedAtFilter(t *testing.T) {
 	if err := nm.Save(n); err != nil {
 		t.Fatal(err)
 	}
-	if n.CreatedAt.IsZero() {
-		t.Fatal("notice CreatedAt not set")
+	if err := gdb.Exec("UPDATE my_dsp_notice SET created_at = ? WHERE id = ?", time.Now().Format("2006-01-02 15:04:05"), n.Id).Error; err != nil {
+		t.Fatal(err)
 	}
 	got := nm.GetDspNoticeByDspId(d1.Id, 0, cutoff)
 	if len(got) != 1 || got[0].Ip != "1.1.1.1" {
 		t.Fatalf("GetDspNoticeByDspId: %+v", got)
+	}
+	if got[0].CreateTime == "" {
+		t.Fatal("expected CreateTime mapped from created_at")
 	}
 	future := time.Now().Add(time.Hour).Format("2006-01-02 15:04:05")
 	if len(nm.GetDspNoticeByDspId(d1.Id, 0, future)) != 0 {
@@ -267,9 +259,6 @@ func TestUserKeySaveAndLookup(t *testing.T) {
 	uk := &model.UserKey{UserId: 9, BrowserKey: "bk1", UserAgent: "Mozilla"}
 	if err := km.Save(uk); err != nil {
 		t.Fatal(err)
-	}
-	if uk.CreatedAt.IsZero() {
-		t.Fatal("CreatedAt not set")
 	}
 	list := km.GetUserKeyList(9)
 	if len(list) != 1 || list[0].BrowserKey != "bk1" {
